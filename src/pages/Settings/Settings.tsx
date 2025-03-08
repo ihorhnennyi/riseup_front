@@ -1,5 +1,6 @@
 import PageHeader from '@components/PageHeader'
 import { Box } from '@mui/material'
+import CityBlock from './components/CityBlock'
 import StatusBlock from './components/StatusBlock'
 
 const Settings = () => {
@@ -10,8 +11,11 @@ const Settings = () => {
 				description='Управляйте параметрами системы и настройками пользователей'
 			/>
 
-			{/* Блок с городами */}
-			<StatusBlock />
+			{/* Блоки в строку с переносом */}
+			<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+				<StatusBlock />
+				<CityBlock />
+			</Box>
 		</Box>
 	)
 }
