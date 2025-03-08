@@ -23,7 +23,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, description }) => {
 				position: 'relative',
 			}}
 		>
-			{/* Анимированный текст */}
 			<Box>
 				<motion.div
 					initial={{ opacity: 0, y: -20 }}

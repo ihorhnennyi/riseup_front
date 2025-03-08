@@ -24,9 +24,8 @@ const TableWrapper: React.FC<TableWrapperProps> = ({ columns, data }) => {
 			if (containerRef.current) {
 				const rect = containerRef.current.getBoundingClientRect()
 				const windowHeight = window.innerHeight
-				const calculatedHeight = windowHeight - rect.top - 30 // 20px отступ снизу
-
-				setMaxHeight(Math.max(calculatedHeight, 300)) // Минимальная высота 300px
+				const calculatedHeight = windowHeight - rect.top - 30
+				setMaxHeight(Math.max(calculatedHeight, 300))
 			}
 		}
 
@@ -35,7 +34,6 @@ const TableWrapper: React.FC<TableWrapperProps> = ({ columns, data }) => {
 		return () => window.removeEventListener('resize', updateHeight)
 	}, [])
 
-	// Анимация для строк
 	const rowVariants = {
 		hidden: { opacity: 0, y: 10 },
 		visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },

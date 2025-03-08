@@ -1,6 +1,12 @@
+import { Layout } from '@layouts/index'
+import {
+	Dashboard,
+	Leads,
+	Recruiters,
+	Settings,
+	Statistics,
+} from '@pages/index'
 import { createBrowserRouter } from 'react-router-dom'
-import { Layout } from '../layouts'
-import { Dashboard, Leads, Recruiters, Settings, Statistics } from '../pages'
 
 export const router = createBrowserRouter([
 	{

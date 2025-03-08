@@ -10,7 +10,7 @@ interface ModalWrapperProps {
 	open: boolean
 	onClose: () => void
 	children: React.ReactNode
-	actions?: React.ReactNode // Кастомные кнопки внизу
+	actions?: React.ReactNode
 }
 
 const ModalWrapper: React.FC<ModalWrapperProps> = ({

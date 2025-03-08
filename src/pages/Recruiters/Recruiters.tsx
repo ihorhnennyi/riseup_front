@@ -1,6 +1,6 @@
+import { PageHeader } from '@components/index'
 import { Box, TextField } from '@mui/material'
 import { useState } from 'react'
-import { PageHeader } from '../../components'
 import AddUserModal from './components/AddUserModal'
 import RecruitersTable from './components/RecruitersTable'
 

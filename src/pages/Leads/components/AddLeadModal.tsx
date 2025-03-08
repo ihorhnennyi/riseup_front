@@ -2,7 +2,7 @@ import { ModalWrapper } from '@components/index'
 import { Button, TextField } from '@mui/material'
 import { useState } from 'react'
 
-const AddUserModal = () => {
+const AddLeadModal = () => {
 	const [open, setOpen] = useState(false)
 	const [name, setName] = useState('')
 
@@ -37,4 +37,4 @@ const AddUserModal = () => {
 	)
 }
 
-export default AddUserModal
+export default AddLeadModal
