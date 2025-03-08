@@ -1,17 +1,17 @@
 import { createBrowserRouter } from 'react-router-dom'
-import { Layout } from '../layouts/'
-// import Dashboard from './pages/Dashboard'
-// import Leads from './pages/Leads'
-// import Offers from './pages/Offers'
+import { Layout } from '../layouts'
+import { Dashboard, Leads, Recruiters, Settings, Statistics } from '../pages'
 
 export const router = createBrowserRouter([
 	{
 		path: '/',
 		element: <Layout />,
 		children: [
-			// { path: '/', element: <Dashboard /> },
-			// { path: '/leads', element: <Leads /> },
-			// { path: '/offers', element: <Offers /> },
+			{ path: '/', element: <Dashboard /> },
+			{ path: '/candidates', element: <Leads /> },
+			{ path: '/recruiters', element: <Recruiters /> },
+			{ path: '/statistics', element: <Statistics /> },
+			{ path: '/settings', element: <Settings /> },
 		],
 	},
 ])

@@ -19,15 +19,15 @@ import {
 	ListItemText,
 	Typography,
 } from '@mui/material'
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useThemeContext } from '../../context/ThemeContext'
 
 interface SidebarProps {
 	role: 'admin' | 'user'
+	collapsed: boolean
+	setCollapsed: (value: boolean) => void
 }
 
-// Конфигурация меню
 const menuItems = {
 	admin: [
 		{ text: 'Дашборд', icon: <Dashboard />, path: '/' },
@@ -42,31 +42,31 @@ const menuItems = {
 	],
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role }) => {
+const Sidebar: React.FC<SidebarProps> = ({ role, collapsed, setCollapsed }) => {
 	const { toggleTheme, isDarkMode } = useThemeContext()
-	const [collapsed, setCollapsed] = useState(false)
+	const sidebarWidth = collapsed ? 80 : 240
 
 	return (
 		<Drawer
 			variant='permanent'
 			sx={{
-				width: collapsed ? 80 : 240,
+				width: sidebarWidth,
 				flexShrink: 0,
 				overflow: 'hidden',
 				height: '100vh',
+				transition: 'width 0.3s ease-in-out',
 				'& .MuiDrawer-paper': {
-					width: collapsed ? 80 : 240,
+					width: sidebarWidth,
 					boxSizing: 'border-box',
-					transition: 'width 0.3s ease-in-out',
 					display: 'flex',
 					flexDirection: 'column',
 					height: '100vh',
 					overflow: 'hidden',
 					alignItems: collapsed ? 'center' : 'flex-start',
+					transition: 'width 0.3s ease-in-out',
 				},
 			}}
 		>
-			{/* Верхняя часть */}
 			<Box
 				sx={{
 					display: 'flex',
@@ -82,7 +82,6 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
 				</IconButton>
 			</Box>
 
-			{/* Меню */}
 			<Box sx={{ flexGrow: 1, width: '100%' }}>
 				<List>
 					{menuItems[role].map(({ text, icon, path }) => (
@@ -92,21 +91,20 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
 							to={path}
 							sx={{
 								justifyContent: collapsed ? 'center' : 'flex-start',
-								px: 2, // Отступ от края
-								width: '100%', // Фон на всю ширину
+								px: 2,
+								width: '100%',
+								transition: 'padding 0.3s ease-in-out',
 							}}
 						>
 							<ListItemIcon sx={{ minWidth: 40, justifyContent: 'center' }}>
 								{icon}
 							</ListItemIcon>
-							{!collapsed && <ListItemText primary={text} sx={{ ml: 2 }} />}{' '}
-							{/* Отступ текста */}
+							{!collapsed && <ListItemText primary={text} sx={{ ml: 2 }} />}
 						</ListItemButton>
 					))}
 				</List>
 			</Box>
 
-			{/* Нижняя часть (переключение темы и выход) */}
 			<Box sx={{ width: '100%' }}>
 				<Divider />
 				<List sx={{ display: 'flex', flexDirection: 'column', pb: 2 }}>
@@ -114,8 +112,8 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
 						onClick={toggleTheme}
 						sx={{
 							justifyContent: collapsed ? 'center' : 'flex-start',
-							px: 2, // Отступ от края
-							width: '100%', // Фон на всю ширину
+							px: 2,
+							width: '100%',
 						}}
 					>
 						<ListItemIcon sx={{ minWidth: 40, justifyContent: 'center' }}>
@@ -127,8 +125,8 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
 					<ListItemButton
 						sx={{
 							justifyContent: collapsed ? 'center' : 'flex-start',
-							px: 2, // Отступ от края
-							width: '100%', // Фон на всю ширину
+							px: 2,
+							width: '100%',
 						}}
 					>
 						<ListItemIcon sx={{ minWidth: 40, justifyContent: 'center' }}>
