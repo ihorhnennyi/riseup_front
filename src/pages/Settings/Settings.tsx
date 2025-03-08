@@ -3,6 +3,7 @@ import { Box } from '@mui/material'
 import { useState } from 'react'
 import BranchBlock from './components/BranchBlock'
 import CityBlock from './components/CityBlock'
+import IntegrationBlock from './components/IntergrationBlock'
 import StatusBlock from './components/StatusBlock'
 
 const Settings = () => {
@@ -19,6 +20,7 @@ const Settings = () => {
 				<StatusBlock />
 				<CityBlock />
 				<BranchBlock cities={cities} />
+				<IntegrationBlock />
 			</Box>
 		</Box>
 	)
