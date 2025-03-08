@@ -16,21 +16,15 @@ interface TableWrapperProps {
 
 const TableWrapper: React.FC<TableWrapperProps> = ({ columns, data }) => {
 	const containerRef = useRef<HTMLDivElement | null>(null)
-	const [height, setHeight] = useState<number | 'auto'>('auto')
+	const [maxHeight, setMaxHeight] = useState<number | 'auto'>('auto')
 
 	useEffect(() => {
 		const updateHeight = () => {
 			if (containerRef.current) {
-				const parent = containerRef.current.parentElement
-				if (parent) {
-					const parentHeight = parent.clientHeight
-					const siblingHeight = Array.from(parent.children)
-						.filter(el => el !== containerRef.current)
-						.reduce((acc, el) => acc + el.clientHeight, 0)
-
-					const availableHeight = parentHeight - siblingHeight
-					setHeight(availableHeight > 300 ? availableHeight : 'auto')
-				}
+				const rect = containerRef.current.getBoundingClientRect()
+				const windowHeight = window.innerHeight
+				const calculatedHeight = windowHeight - rect.top - 40
+				setMaxHeight(calculatedHeight > 300 ? calculatedHeight : 'auto')
 			}
 		}
 
@@ -46,8 +40,7 @@ const TableWrapper: React.FC<TableWrapperProps> = ({ columns, data }) => {
 			sx={{
 				width: '100%',
 				maxWidth: '1800px',
-				height: height,
-				maxHeight: '80vh',
+				maxHeight,
 				overflow: 'auto',
 				margin: '0 auto',
 				backgroundColor: theme => theme.palette.background.paper,
