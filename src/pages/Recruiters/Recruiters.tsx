@@ -1,5 +1,6 @@
 import { Box, TextField } from '@mui/material'
 import { useState } from 'react'
+import { PageHeader } from '../../components'
 import AddUserModal from './components/AddUserModal'
 import RecruitersTable from './components/RecruitersTable'
 
@@ -8,7 +9,11 @@ const Recruiters = () => {
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-			<h1>Рекрутеры</h1>
+			<PageHeader
+				title='Рекрутеры'
+				description='Управляйте списком рекрутеров и следите за их статусом'
+			/>
+
 			<Box
 				sx={{
 					display: 'flex',
@@ -26,6 +31,7 @@ const Recruiters = () => {
 				/>
 				<AddUserModal />
 			</Box>
+
 			<RecruitersTable />
 		</Box>
 	)

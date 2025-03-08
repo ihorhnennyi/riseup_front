@@ -27,8 +27,6 @@ const RecruitersTable = () => {
 		[3, 'Елена Смирнова', 'elena@example.com', 'Активен'],
 		[3, 'Елена Смирнова', 'elena@example.com', 'Активен'],
 		[3, 'Елена Смирнова', 'elena@example.com', 'Активен'],
-		[3, 'Елена Смирнова', 'elena@example.com', 'Активен'],
-		[3, 'Елена Смирнова', 'elena@example.com', 'Активен'],
 	]
 
 	return <TableWrapper columns={columns} data={data} />
