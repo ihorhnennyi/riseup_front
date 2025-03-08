@@ -22,6 +22,7 @@ const Layout = () => {
 					display: 'flex',
 					flexDirection: 'column',
 					transition: 'margin 0.3s ease-in-out',
+					mr: '20px',
 					ml: `${sidebarWidth}px`,
 				}}
 			>
