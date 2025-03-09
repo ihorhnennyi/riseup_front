@@ -1,7 +1,9 @@
+import ProtectedRoute from '@components/ProtectedRoute'
 import { Layout } from '@layouts/index'
 import {
 	Dashboard,
 	Leads,
+	Login,
 	Recruiters,
 	Settings,
 	Statistics,
@@ -9,15 +11,23 @@ import {
 import { createBrowserRouter } from 'react-router-dom'
 
 export const router = createBrowserRouter([
+	{ path: '/', element: <Login /> }, // Страница логина
+
 	{
 		path: '/',
-		element: <Layout />,
+		element: <ProtectedRoute />, // Защита маршрутов
 		children: [
-			{ path: '/', element: <Dashboard /> },
-			{ path: '/candidates', element: <Leads /> },
-			{ path: '/recruiters', element: <Recruiters /> },
-			{ path: '/statistics', element: <Statistics /> },
-			{ path: '/settings', element: <Settings /> },
+			{
+				path: '/',
+				element: <Layout />,
+				children: [
+					{ path: '/dashboard', element: <Dashboard /> },
+					{ path: '/candidates', element: <Leads /> },
+					{ path: '/recruiters', element: <Recruiters /> },
+					{ path: '/statistics', element: <Statistics /> },
+					{ path: '/settings', element: <Settings /> },
+				],
+			},
 		],
 	},
 ])
