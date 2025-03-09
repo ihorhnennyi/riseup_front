@@ -11,7 +11,7 @@ import {
 import { createBrowserRouter } from 'react-router-dom'
 
 export const router = createBrowserRouter([
-	{ path: '/', element: <Login /> }, // Страница логина
+	{ path: '/login', element: <Login /> }, // Добавляем маршрут для страницы логина
 
 	{
 		path: '/',

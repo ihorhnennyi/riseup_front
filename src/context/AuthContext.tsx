@@ -1,18 +1,41 @@
-import { createContext, ReactNode, useContext, useState } from 'react'
+import {
+	createContext,
+	ReactNode,
+	useContext,
+	useEffect,
+	useState,
+} from 'react'
 
 interface AuthContextType {
 	isAuthenticated: boolean
-	login: () => void
+	login: (token: string) => void
 	logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
+	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+		!!localStorage.getItem('refresh_token')
+	)
 
-	const login = () => setIsAuthenticated(true)
-	const logout = () => setIsAuthenticated(false)
+	// Функция логина (сохраняем токен и обновляем состояние)
+	const login = (token: string) => {
+		localStorage.setItem('refresh_token', token)
+		setIsAuthenticated(true)
+	}
+
+	// Функция выхода (удаляем токен)
+	const logout = () => {
+		localStorage.removeItem('refresh_token')
+		setIsAuthenticated(false)
+	}
+
+	// Проверяем токен при каждом ререндере
+	useEffect(() => {
+		const token = localStorage.getItem('refresh_token')
+		setIsAuthenticated(!!token)
+	}, [])
 
 	return (
 		<AuthContext.Provider value={{ isAuthenticated, login, logout }}>

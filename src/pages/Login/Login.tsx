@@ -1,4 +1,5 @@
-import { Box, Button, Checkbox, TextField, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
+import LoginForm from './components/LoginForm'
 
 const LoginPage = () => {
 	return (
@@ -26,35 +27,7 @@ const LoginPage = () => {
 					alignSelf: 'center',
 				}}
 			>
-				<Box
-					sx={{
-						width: '70%',
-					}}
-				>
-					<Typography fontWeight='bold' fontSize={22} mb={1}>
-						Добро пожаловать
-					</Typography>
-					<Typography color='gray' mb={3}>
-						Введите свои данные для входа
-					</Typography>
-					<TextField label='Email' fullWidth margin='normal' />
-					<TextField label='Пароль' type='password' fullWidth margin='normal' />
-					<Box display='flex' alignItems='center' mt={1}>
-						<Checkbox />
-						<Typography>Запомнить меня</Typography>
-						<Box sx={{ flexGrow: 1 }} />
-						<Typography color='primary' sx={{ cursor: 'pointer' }}>
-							Забыли пароль?
-						</Typography>
-					</Box>
-					<Button
-						variant='contained'
-						fullWidth
-						sx={{ mt: 2, backgroundColor: '#6A5ACD' }}
-					>
-						Войти
-					</Button>
-				</Box>
+				<LoginForm />
 			</Box>
 
 			{/* Правая часть с графикой */}
