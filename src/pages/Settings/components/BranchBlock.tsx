@@ -1,3 +1,5 @@
+import { createBranch, deleteBranch, fetchBranches } from '@api/branchApi'
+import { fetchCities } from '@api/cityApi'
 import ModalWrapper from '@components/ModalWrapper'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -11,26 +13,77 @@ import {
 	Typography,
 	useTheme,
 } from '@mui/material'
-import { useState } from 'react'
+import { useSnackbar } from 'notistack'
+import { useEffect, useState } from 'react'
 
-const BranchBlock = ({ cities }) => {
+const BranchBlock = () => {
 	const theme = useTheme()
 	const isDarkMode = theme.palette.mode === 'dark'
+	const { enqueueSnackbar } = useSnackbar()
 
 	const [branches, setBranches] = useState([])
+	const [cities, setCities] = useState([])
 	const [open, setOpen] = useState(false)
-	const [newBranch, setNewBranch] = useState({ name: '', city: '' })
+	const [newBranch, setNewBranch] = useState({
+		name: '',
+		city: { _id: '', name: '' },
+	})
+	const [loading, setLoading] = useState(false)
 
-	const handleAddBranch = () => {
-		if (newBranch.name.trim() && newBranch.city) {
-			setBranches([...branches, newBranch])
-			setNewBranch({ name: '', city: '' })
+	useEffect(() => {
+		const fetchCitiesData = async () => {
+			try {
+				const cityData = await fetchCities()
+				setCities(cityData)
+			} catch (error) {
+				enqueueSnackbar('Ошибка загрузки городов', { variant: 'error' })
+			}
+		}
+		fetchCitiesData()
+	}, [])
+
+	useEffect(() => {
+		const fetchBranchesData = async () => {
+			try {
+				const branchData = await fetchBranches()
+				setBranches(branchData)
+			} catch (error) {
+				enqueueSnackbar('Ошибка загрузки филиалов', { variant: 'error' })
+			}
+		}
+		fetchBranchesData()
+	}, [])
+
+	const handleAddBranch = async () => {
+		if (!newBranch.name.trim() || !newBranch.city._id) {
+			enqueueSnackbar('Введите название филиала и выберите город', {
+				variant: 'warning',
+			})
+			return
+		}
+
+		setLoading(true)
+		try {
+			const response = await createBranch(newBranch.name, newBranch.city._id)
+			setBranches([...branches, response])
+			enqueueSnackbar('Филиал добавлен', { variant: 'success' })
+			setNewBranch({ name: '', city: { _id: '', name: '' } })
 			setOpen(false)
+		} catch (error) {
+			enqueueSnackbar('Ошибка при добавлении филиала', { variant: 'error' })
+		} finally {
+			setLoading(false)
 		}
 	}
 
-	const handleDeleteBranch = index => {
-		setBranches(branches.filter((_, i) => i !== index))
+	const handleDeleteBranch = async id => {
+		try {
+			await deleteBranch(id)
+			setBranches(branches.filter(branch => branch._id !== id))
+			enqueueSnackbar('Филиал удален', { variant: 'success' })
+		} catch (error) {
+			enqueueSnackbar('Ошибка при удалении филиала', { variant: 'error' })
+		}
 	}
 
 	return (
@@ -48,9 +101,9 @@ const BranchBlock = ({ cities }) => {
 					overflowY: 'auto',
 				}}
 			>
-				{branches.map((branch, index) => (
+				{branches.map(branch => (
 					<Card
-						key={index}
+						key={branch._id}
 						sx={{
 							display: 'flex',
 							alignItems: 'center',
@@ -64,9 +117,13 @@ const BranchBlock = ({ cities }) => {
 						}}
 					>
 						<Typography>
-							{branch.name} ({branch.city})
+							{branch.name} (
+							{branch.city ? branch.city.name : 'Не указан город'})
 						</Typography>
-						<IconButton size='small' onClick={() => handleDeleteBranch(index)}>
+						<IconButton
+							size='small'
+							onClick={() => handleDeleteBranch(branch._id)}
+						>
 							<DeleteIcon sx={{ color: isDarkMode ? '#ff4d4f' : 'red' }} />
 						</IconButton>
 					</Card>
@@ -90,8 +147,12 @@ const BranchBlock = ({ cities }) => {
 				actions={
 					<>
 						<Button onClick={() => setOpen(false)}>Отмена</Button>
-						<Button color='primary' onClick={handleAddBranch}>
-							Добавить
+						<Button
+							color='primary'
+							onClick={handleAddBranch}
+							disabled={loading}
+						>
+							{loading ? 'Добавление...' : 'Добавить'}
 						</Button>
 					</>
 				}
@@ -106,13 +167,18 @@ const BranchBlock = ({ cities }) => {
 					select
 					fullWidth
 					label='Город'
-					value={newBranch.city}
-					onChange={e => setNewBranch({ ...newBranch, city: e.target.value })}
+					value={newBranch.city._id || ''}
+					onChange={e =>
+						setNewBranch({
+							...newBranch,
+							city: cities.find(city => city._id === e.target.value),
+						})
+					}
 					sx={{ mt: 2 }}
 				>
-					{cities.map((city, index) => (
-						<MenuItem key={index} value={city}>
-							{city}
+					{cities.map(city => (
+						<MenuItem key={city._id} value={city._id}>
+							{city.name}
 						</MenuItem>
 					))}
 				</TextField>

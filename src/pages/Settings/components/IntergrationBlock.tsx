@@ -40,11 +40,12 @@ const IntegrationBlock = () => {
 	}
 
 	return (
-		<Box sx={{ width: '100%', maxWidth: 350 }}>
+		<Box sx={{ width: '100%', maxWidth: 350, position: 'relative' }}>
 			<Typography variant='h6' sx={{ mb: 2 }}>
 				Интеграции
 			</Typography>
 
+			{/* Размытие блока */}
 			<Box
 				sx={{
 					borderRadius: 2,
@@ -52,6 +53,8 @@ const IntegrationBlock = () => {
 					padding: 2,
 					maxHeight: 250,
 					overflowY: 'auto',
+					filter: 'blur(5px)', // Применяем размытие
+					pointerEvents: 'none', // Блокируем взаимодействие
 				}}
 			>
 				{integrations.map((integration, index) => (
@@ -73,6 +76,7 @@ const IntegrationBlock = () => {
 						<IconButton
 							size='small'
 							onClick={() => handleDeleteIntegration(integration.name)}
+							disabled
 						>
 							<DeleteIcon sx={{ color: isDarkMode ? '#ff4d4f' : 'red' }} />
 						</IconButton>
@@ -86,6 +90,7 @@ const IntegrationBlock = () => {
 				startIcon={<AddIcon />}
 				sx={{ mt: 2 }}
 				onClick={() => setOpen(true)}
+				disabled
 			>
 				Добавить интеграцию
 			</Button>
@@ -96,8 +101,10 @@ const IntegrationBlock = () => {
 				onClose={() => setOpen(false)}
 				actions={
 					<>
-						<Button onClick={() => setOpen(false)}>Отмена</Button>
-						<Button color='primary' onClick={handleAddIntegration}>
+						<Button onClick={() => setOpen(false)} disabled>
+							Отмена
+						</Button>
+						<Button color='primary' onClick={handleAddIntegration} disabled>
 							Добавить
 						</Button>
 					</>
@@ -111,6 +118,7 @@ const IntegrationBlock = () => {
 						setNewIntegration({ ...newIntegration, name: e.target.value })
 					}
 					sx={{ mb: 2 }}
+					disabled
 				/>
 				<TextField
 					fullWidth
@@ -119,6 +127,7 @@ const IntegrationBlock = () => {
 					onChange={e =>
 						setNewIntegration({ ...newIntegration, url: e.target.value })
 					}
+					disabled
 				/>
 			</ModalWrapper>
 		</Box>

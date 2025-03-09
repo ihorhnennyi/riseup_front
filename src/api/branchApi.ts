@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = 'http://localhost:8000/cities'
+const API_URL = 'http://localhost:8000/branches'
 
 const getAuthHeaders = () => {
 	const token = localStorage.getItem('accessToken')
@@ -16,7 +16,7 @@ const getCsrfTokenFromCookie = () => {
 	)
 }
 
-export const fetchCities = async () => {
+export const fetchBranches = async () => {
 	try {
 		const response = await axios.get(API_URL, {
 			withCredentials: true,
@@ -31,11 +31,11 @@ export const fetchCities = async () => {
 	}
 }
 
-export const createCity = async (name: string) => {
+export const createBranch = async (name: string, cityId: string) => {
 	try {
 		const response = await axios.post(
 			API_URL,
-			{ name },
+			{ name, cityId },
 			{
 				withCredentials: true,
 				headers: {
@@ -50,7 +50,7 @@ export const createCity = async (name: string) => {
 	}
 }
 
-export const deleteCity = async (id: string) => {
+export const deleteBranch = async (id: string) => {
 	try {
 		const response = await axios.delete(`${API_URL}/${id}`, {
 			withCredentials: true,
