@@ -21,7 +21,14 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
 	actions,
 }) => {
 	return (
-		<Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
+		<Dialog
+			open={open}
+			onClose={onClose}
+			maxWidth='sm'
+			fullWidth
+			disableEnforceFocus
+			disableRestoreFocus
+		>
 			{title && <DialogTitle>{title}</DialogTitle>}
 			<DialogContent>{children}</DialogContent>
 			{actions && <DialogActions>{actions}</DialogActions>}

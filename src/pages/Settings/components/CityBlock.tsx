@@ -1,3 +1,4 @@
+import { createCity, deleteCity, fetchCities } from '@api/cityApi'
 import ModalWrapper from '@components/ModalWrapper'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -10,26 +11,64 @@ import {
 	Typography,
 	useTheme,
 } from '@mui/material'
-import { useState } from 'react'
+import { useSnackbar } from 'notistack'
+import { useEffect, useState } from 'react'
+
+type City = {
+	_id: string
+	name: string
+}
 
 const CityBlock = () => {
 	const theme = useTheme()
 	const isDarkMode = theme.palette.mode === 'dark'
+	const { enqueueSnackbar } = useSnackbar()
 
-	const [cities, setCities] = useState(['Киев', 'Львов', 'Одесса', 'Харьков'])
+	const [cities, setCities] = useState<City[]>([])
 	const [open, setOpen] = useState(false)
 	const [newCity, setNewCity] = useState('')
+	const [loading, setLoading] = useState(false)
 
-	const handleAddCity = () => {
-		if (newCity.trim()) {
-			setCities([...cities, newCity.trim()])
+	useEffect(() => {
+		const loadCities = async () => {
+			try {
+				const data = await fetchCities()
+				setCities(data)
+			} catch (error) {
+				enqueueSnackbar('Ошибка загрузки городов', { variant: 'error' })
+			}
+		}
+		loadCities()
+	}, [])
+
+	const handleAddCity = async () => {
+		if (!newCity.trim()) {
+			enqueueSnackbar('Введите название города', { variant: 'warning' })
+			return
+		}
+
+		setLoading(true)
+		try {
+			const addedCity = await createCity(newCity.trim())
+			setCities([...cities, addedCity])
+			enqueueSnackbar('Город добавлен', { variant: 'success' })
 			setNewCity('')
 			setOpen(false)
+		} catch (error) {
+			enqueueSnackbar('Ошибка при добавлении города', { variant: 'error' })
+		} finally {
+			setLoading(false)
 		}
 	}
 
-	const handleDeleteCity = (city: string) => {
-		setCities(cities.filter(c => c !== city))
+	const handleDeleteCity = async (id: string) => {
+		try {
+			await deleteCity(id)
+			setCities(prev => prev.filter(city => city._id !== id))
+			enqueueSnackbar('Город удален', { variant: 'success' })
+		} catch (error) {
+			enqueueSnackbar('Ошибка при удалении города', { variant: 'error' })
+		}
 	}
 
 	return (
@@ -47,9 +86,9 @@ const CityBlock = () => {
 					overflowY: 'auto',
 				}}
 			>
-				{cities.map((city, index) => (
+				{cities.map(city => (
 					<Card
-						key={index}
+						key={city._id}
 						sx={{
 							display: 'flex',
 							alignItems: 'center',
@@ -62,8 +101,8 @@ const CityBlock = () => {
 							boxShadow: 1,
 						}}
 					>
-						<Typography>{city}</Typography>
-						<IconButton size='small' onClick={() => handleDeleteCity(city)}>
+						<Typography>{city.name}</Typography>
+						<IconButton size='small' onClick={() => handleDeleteCity(city._id)}>
 							<DeleteIcon sx={{ color: isDarkMode ? '#ff4d4f' : 'red' }} />
 						</IconButton>
 					</Card>
@@ -87,8 +126,8 @@ const CityBlock = () => {
 				actions={
 					<>
 						<Button onClick={() => setOpen(false)}>Отмена</Button>
-						<Button color='primary' onClick={handleAddCity}>
-							Добавить
+						<Button color='primary' onClick={handleAddCity} disabled={loading}>
+							{loading ? 'Добавление...' : 'Добавить'}
 						</Button>
 					</>
 				}
