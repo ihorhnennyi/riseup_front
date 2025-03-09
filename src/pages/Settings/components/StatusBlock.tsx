@@ -1,3 +1,5 @@
+import { createStatus, deleteStatus, fetchStatuses } from '@api/statusApi'
+
 import ModalWrapper from '@components/ModalWrapper'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -9,27 +11,70 @@ import {
 	TextField,
 	Typography,
 } from '@mui/material'
-import { useState } from 'react'
+import { useSnackbar } from 'notistack' // Уведомления
+import { useEffect, useState } from 'react'
+
+type Status = {
+	_id: string
+	name: string
+	color: string
+}
 
 const StatusBlock = () => {
-	const [statuses, setStatuses] = useState([
-		{ name: 'Активен', color: '#28a745' },
-		{ name: 'Неактивен', color: '#dc3545' },
-		{ name: 'В ожидании', color: '#ffc107' },
-	])
+	const { enqueueSnackbar } = useSnackbar()
+	const [statuses, setStatuses] = useState<Status[]>([])
+
 	const [open, setOpen] = useState(false)
 	const [newStatus, setNewStatus] = useState({ name: '', color: '#000000' })
+	const [loading, setLoading] = useState(false)
 
-	const handleAddStatus = () => {
-		if (newStatus.name.trim() && newStatus.color) {
-			setStatuses([...statuses, newStatus])
-			setNewStatus({ name: '', color: '#000000' })
-			setOpen(false)
+	useEffect(() => {
+		const loadStatuses = async () => {
+			try {
+				const data = await fetchStatuses()
+
+				setStatuses(data)
+			} catch (error) {
+				enqueueSnackbar('Ошибка загрузки статусов', { variant: 'error' })
+			}
+		}
+
+		loadStatuses()
+	}, [])
+
+	const handleDeleteStatus = async (id: string | undefined) => {
+		if (!id) {
+			enqueueSnackbar('Ошибка: ID статуса undefined!', { variant: 'error' })
+			return
+		}
+
+		try {
+			await deleteStatus(id)
+			setStatuses(prev => prev.filter(status => status._id !== id))
+			enqueueSnackbar('Статус удален', { variant: 'success' })
+		} catch (error) {
+			enqueueSnackbar('Ошибка при удалении статуса', { variant: 'error' })
 		}
 	}
 
-	const handleDeleteStatus = name => {
-		setStatuses(statuses.filter(status => status.name !== name))
+	const handleAddStatus = async () => {
+		if (!newStatus.name.trim()) {
+			enqueueSnackbar('Введите название статуса', { variant: 'warning' })
+			return
+		}
+
+		setLoading(true)
+		try {
+			const addedStatus = await createStatus(newStatus.name, newStatus.color)
+			setStatuses([...statuses, addedStatus]) // Обновляем список
+			enqueueSnackbar('Статус добавлен', { variant: 'success' })
+			setNewStatus({ name: '', color: '#000000' })
+			setOpen(false)
+		} catch (error) {
+			enqueueSnackbar('Ошибка при добавлении статуса', { variant: 'error' })
+		} finally {
+			setLoading(false)
+		}
 	}
 
 	return (
@@ -47,29 +92,34 @@ const StatusBlock = () => {
 					overflowY: 'auto',
 				}}
 			>
-				{statuses.map((status, index) => (
-					<Card
-						key={index}
-						sx={{
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'space-between',
-							mb: 1,
-							padding: '8px 12px',
-							borderRadius: 2,
-							backgroundColor: status.color,
-							color: '#fff',
-						}}
-					>
-						<Typography>{status.name}</Typography>
-						<IconButton
-							size='small'
-							onClick={() => handleDeleteStatus(status.name)}
+				{statuses.map(status => {
+					return (
+						<Card
+							key={status._id || status.name}
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'space-between',
+								mb: 1,
+								padding: '8px 12px',
+								borderRadius: 2,
+								backgroundColor: status.color,
+								color: '#fff',
+							}}
 						>
-							<DeleteIcon sx={{ color: '#fff' }} />
-						</IconButton>
-					</Card>
-				))}
+							<Typography>{status.name}</Typography>
+							<IconButton
+								size='small'
+								onClick={() => {
+									console.log('Клик по кнопке удаления! ID:', status._id)
+									handleDeleteStatus(status._id)
+								}}
+							>
+								<DeleteIcon sx={{ color: '#fff' }} />
+							</IconButton>
+						</Card>
+					)
+				})}
 			</Box>
 
 			<Button
@@ -82,7 +132,6 @@ const StatusBlock = () => {
 				Добавить статус
 			</Button>
 
-			{/* Модальное окно для добавления статуса */}
 			<ModalWrapper
 				title='Добавить статус'
 				open={open}
@@ -90,8 +139,12 @@ const StatusBlock = () => {
 				actions={
 					<>
 						<Button onClick={() => setOpen(false)}>Отмена</Button>
-						<Button color='primary' onClick={handleAddStatus}>
-							Добавить
+						<Button
+							color='primary'
+							onClick={handleAddStatus}
+							disabled={loading}
+						>
+							{loading ? 'Добавление...' : 'Добавить'}
 						</Button>
 					</>
 				}
@@ -103,7 +156,6 @@ const StatusBlock = () => {
 					onChange={e => setNewStatus({ ...newStatus, name: e.target.value })}
 				/>
 
-				{/* Выбор цвета с красивым UI */}
 				<Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
 					<Typography sx={{ mr: 2 }}>Цвет:</Typography>
 					<label htmlFor='colorPicker' style={{ cursor: 'pointer' }}>

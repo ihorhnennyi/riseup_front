@@ -2,6 +2,14 @@ import axios from 'axios'
 
 const API_URL = 'http://localhost:8000/auth'
 
+// ✅ Функция для получения CSRF-токена
+export const fetchCsrfToken = async () => {
+	const response = await axios.get(`${API_URL}/csrf-token`, {
+		withCredentials: true,
+	})
+	return response.data.csrfToken
+}
+
 const api = axios.create({
 	baseURL: API_URL,
 	withCredentials: true,
@@ -12,7 +20,6 @@ export const getCsrfToken = async () => {
 		const response = await api.get('/csrf-token')
 		return response.data.csrfToken
 	} catch (error) {
-		console.error('Ошибка получения CSRF-токена:', error)
 		throw error
 	}
 }
@@ -36,7 +43,6 @@ export const login = async (
 		)
 		return response.data
 	} catch (error) {
-		console.error('Ошибка входа:', error.response?.data || error.message)
 		throw error
 	}
 }
