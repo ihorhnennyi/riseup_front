@@ -1,66 +1,32 @@
-import axios from 'axios'
+import api, { getAuthHeaders } from './apiClient'
 
-const API_URL = 'http://localhost:8000/branches'
-
-const getAuthHeaders = () => {
-	const token = localStorage.getItem('accessToken')
-	return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-const getCsrfTokenFromCookie = () => {
-	return (
-		document.cookie
-			.split('; ')
-			.find(row => row.startsWith('XSRF-TOKEN='))
-			?.split('=')[1] || ''
-	)
-}
-
+// 🔹 Получение списка филиалов
 export const fetchBranches = async () => {
-	try {
-		const response = await axios.get(API_URL, {
-			withCredentials: true,
-			headers: {
-				...getAuthHeaders(),
-				'X-XSRF-TOKEN': getCsrfTokenFromCookie(),
-			},
-		})
-		return response.data
-	} catch (error) {
-		throw error
-	}
+	const headers = await getAuthHeaders()
+	const response = await api.get('/branches', {
+		headers,
+		withCredentials: true,
+	})
+	return response.data
 }
 
+// 🔹 Создание филиала
 export const createBranch = async (name: string, cityId: string) => {
-	try {
-		const response = await axios.post(
-			API_URL,
-			{ name, cityId },
-			{
-				withCredentials: true,
-				headers: {
-					...getAuthHeaders(),
-					'X-XSRF-TOKEN': getCsrfTokenFromCookie(),
-				},
-			}
-		)
-		return response.data
-	} catch (error) {
-		throw error
-	}
+	const headers = await getAuthHeaders()
+	const response = await api.post(
+		'/branches',
+		{ name, cityId },
+		{ headers, withCredentials: true }
+	)
+	return response.data
 }
 
+// 🔹 Удаление филиала
 export const deleteBranch = async (id: string) => {
-	try {
-		const response = await axios.delete(`${API_URL}/${id}`, {
-			withCredentials: true,
-			headers: {
-				...getAuthHeaders(),
-				'X-XSRF-TOKEN': getCsrfTokenFromCookie(),
-			},
-		})
-		return response.data
-	} catch (error) {
-		throw error
-	}
+	const headers = await getAuthHeaders()
+	const response = await api.delete(`/branches/${id}`, {
+		headers,
+		withCredentials: true,
+	})
+	return response.data
 }

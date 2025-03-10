@@ -1,3 +1,4 @@
+import axios from 'axios'
 import {
 	createContext,
 	ReactNode,
@@ -15,26 +16,39 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-		!!localStorage.getItem('refresh_token')
-	)
+	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
 
-	// Функция логина (сохраняем токен и обновляем состояние)
+	// Функция логина
 	const login = (token: string) => {
 		localStorage.setItem('refresh_token', token)
 		setIsAuthenticated(true)
 	}
 
-	// Функция выхода (удаляем токен)
-	const logout = () => {
+	// Функция выхода
+	const logout = async () => {
+		await axios.post(
+			'http://localhost:8000/auth/logout',
+			{},
+			{ withCredentials: true }
+		)
 		localStorage.removeItem('refresh_token')
 		setIsAuthenticated(false)
+		window.location.href = '/login'
 	}
 
-	// Проверяем токен при каждом ререндере
+	// Проверка сессии при каждом рендере
 	useEffect(() => {
-		const token = localStorage.getItem('refresh_token')
-		setIsAuthenticated(!!token)
+		const checkAuth = async () => {
+			try {
+				const response = await axios.get('http://localhost:8000/auth/session', {
+					withCredentials: true,
+				})
+				setIsAuthenticated(response.data.isAuthenticated)
+			} catch {
+				setIsAuthenticated(false)
+			}
+		}
+		checkAuth()
 	}, [])
 
 	return (

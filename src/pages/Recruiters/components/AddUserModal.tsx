@@ -1,5 +1,8 @@
+import { createUser } from '@api/userApi'
 import { ModalWrapper } from '@components/index'
-import DeleteIcon from '@mui/icons-material/Delete'
+import AutorenewIcon from '@mui/icons-material/Autorenew'
+import Visibility from '@mui/icons-material/Visibility'
+import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import {
 	Avatar,
 	Box,
@@ -14,24 +17,41 @@ import { useState } from 'react'
 
 const recruiterStatuses = ['Активен', 'Неактивен']
 const integrationTypes = ['Google', 'Facebook', 'LinkedIn', 'GitHub']
+const userRoles = ['ADMIN', 'USER']
 
-const AddRecruiterModal = () => {
+const generatePassword = () => {
+	const charset =
+		'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
+	let password = ''
+	for (let i = 0; i < 12; i++) {
+		password += charset[Math.floor(Math.random() * charset.length)]
+	}
+	return password
+}
+
+const AddRecruiterModal = ({ onUserCreated }) => {
 	const [open, setOpen] = useState(false)
-	const [newIntegration, setNewIntegration] = useState('') // Тип интеграции
+	const [newIntegration, setNewIntegration] = useState('')
+	const [showPassword, setShowPassword] = useState(false)
+	const [loading, setLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+
 	const [formData, setFormData] = useState({
 		firstName: '',
 		lastName: '',
 		middleName: '',
 		birthDate: null,
 		phone: '',
-		email: '',
 		telegram: '',
 		whatsapp: '',
 		viber: '',
 		facebook: '',
-		photo: '',
-		status: '',
-		integrations: [{ type: '', login: '', password: '' }],
+		photo: null,
+		role: 'USER',
+		status: 'Активен',
+		email: '',
+		password: generatePassword(),
+		integrations: [],
 	})
 
 	const handleChange = (field: string, value: any) => {
@@ -47,7 +67,7 @@ const AddRecruiterModal = () => {
 	}
 
 	const addIntegration = () => {
-		if (!newIntegration) return
+		if (!newIntegration.trim()) return
 		setFormData(prev => ({
 			...prev,
 			integrations: [
@@ -55,7 +75,7 @@ const AddRecruiterModal = () => {
 				{ type: newIntegration, login: '', password: '' },
 			],
 		}))
-		setNewIntegration('') // Очистка выбора
+		setNewIntegration('')
 	}
 
 	const removeIntegration = (index: number) => {
@@ -68,14 +88,42 @@ const AddRecruiterModal = () => {
 	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (file) {
-			const reader = new FileReader()
-			reader.onload = () => {
-				setFormData(prev => ({
-					...prev,
-					photo: reader.result as string,
-				}))
-			}
-			reader.readAsDataURL(file)
+			setFormData(prev => ({ ...prev, photo: file }))
+		}
+	}
+
+	const handleSubmit = async () => {
+		setLoading(true)
+		setError(null)
+
+		if (!formData.firstName || !formData.lastName || !formData.email) {
+			setError('Заполните все обязательные поля!')
+			setLoading(false)
+			return
+		}
+
+		try {
+			const userData = new FormData()
+			Object.keys(formData).forEach(key => {
+				if (key === 'photo' && formData.photo instanceof File) {
+					userData.append('photo', formData.photo)
+				} else if (
+					typeof formData[key] === 'object' &&
+					formData[key] !== null
+				) {
+					userData.append(key, JSON.stringify(formData[key]))
+				} else {
+					userData.append(key, formData[key])
+				}
+			})
+
+			await createUser(userData)
+			setOpen(false)
+			onUserCreated()
+		} catch (err) {
+			setError('Ошибка при создании пользователя')
+		} finally {
+			setLoading(false)
 		}
 	}
 
@@ -92,8 +140,8 @@ const AddRecruiterModal = () => {
 				actions={
 					<>
 						<Button onClick={() => setOpen(false)}>Отмена</Button>
-						<Button color='primary' onClick={() => console.log(formData)}>
-							Добавить
+						<Button color='primary' onClick={handleSubmit} disabled={loading}>
+							{loading ? 'Создание...' : 'Добавить'}
 						</Button>
 					</>
 				}
@@ -103,7 +151,11 @@ const AddRecruiterModal = () => {
 
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 						<Avatar
-							src={formData.photo || '/default-avatar.png'}
+							src={
+								formData.photo
+									? URL.createObjectURL(formData.photo)
+									: '/default-avatar.png'
+							}
 							sx={{ width: 80, height: 80 }}
 						/>
 						<Button variant='contained' component='label'>
@@ -133,16 +185,37 @@ const AddRecruiterModal = () => {
 						onChange={date => handleChange('birthDate', date)}
 					/>
 
+					<Typography variant='h6'>Данные для входа</Typography>
+					<TextField
+						label='Email'
+						type='email'
+						fullWidth
+						value={formData.email}
+						onChange={e => handleChange('email', e.target.value)}
+					/>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+						<TextField
+							label='Пароль'
+							type={showPassword ? 'text' : 'password'}
+							fullWidth
+							value={formData.password}
+							onChange={e => handleChange('password', e.target.value)}
+						/>
+						<IconButton onClick={() => setShowPassword(!showPassword)}>
+							{showPassword ? <VisibilityOff /> : <Visibility />}
+						</IconButton>
+						<IconButton
+							onClick={() => handleChange('password', generatePassword())}
+						>
+							<AutorenewIcon />
+						</IconButton>
+					</Box>
+
 					<Typography variant='h6'>Контакты</Typography>
 					<TextField
 						label='Телефон'
 						value={formData.phone}
 						onChange={e => handleChange('phone', e.target.value)}
-					/>
-					<TextField
-						label='Email'
-						value={formData.email}
-						onChange={e => handleChange('email', e.target.value)}
 					/>
 					<TextField
 						label='Telegram'
@@ -180,28 +253,19 @@ const AddRecruiterModal = () => {
 					</TextField>
 					<Button onClick={addIntegration}>Добавить интеграцию</Button>
 
-					{formData.integrations.map((integration, index) => (
-						<Box key={index} sx={{ display: 'flex', gap: 1 }}>
-							<TextField
-								label={`Логин (${integration.type})`}
-								value={integration.login}
-								onChange={e =>
-									handleArrayChange(index, 'login', e.target.value)
-								}
-							/>
-							<TextField
-								label='Пароль'
-								type='password'
-								value={integration.password}
-								onChange={e =>
-									handleArrayChange(index, 'password', e.target.value)
-								}
-							/>
-							<IconButton onClick={() => removeIntegration(index)}>
-								<DeleteIcon />
-							</IconButton>
-						</Box>
-					))}
+					<Typography variant='h6'>Роль</Typography>
+					<TextField
+						select
+						label='Роль'
+						value={formData.role}
+						onChange={e => handleChange('role', e.target.value)}
+					>
+						{userRoles.map(role => (
+							<MenuItem key={role} value={role}>
+								{role}
+							</MenuItem>
+						))}
+					</TextField>
 
 					<Typography variant='h6'>Статус</Typography>
 					<TextField
@@ -216,6 +280,8 @@ const AddRecruiterModal = () => {
 							</MenuItem>
 						))}
 					</TextField>
+
+					{error && <Typography color='error'>{error}</Typography>}
 				</Box>
 			</ModalWrapper>
 		</>

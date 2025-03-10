@@ -1,3 +1,8 @@
+import {
+	createIntegration,
+	deleteIntegration,
+	fetchIntegrations,
+} from '@api/integrationApi'
 import ModalWrapper from '@components/ModalWrapper'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -10,42 +15,74 @@ import {
 	Typography,
 	useTheme,
 } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const IntegrationBlock = () => {
 	const theme = useTheme()
 	const isDarkMode = theme.palette.mode === 'dark'
 
 	// Список интеграций
-	const [integrations, setIntegrations] = useState([
-		{ name: 'Google Analytics', url: 'https://analytics.google.com' },
-		{ name: 'Facebook Ads', url: 'https://facebook.com/business' },
-	])
-
+	const [integrations, setIntegrations] = useState<
+		{ name: string; url: string; _id: string }[]
+	>([])
 	const [open, setOpen] = useState(false)
+	const [loading, setLoading] = useState(false)
 	const [newIntegration, setNewIntegration] = useState({ name: '', url: '' })
 
-	// Добавление новой интеграции
-	const handleAddIntegration = () => {
-		if (newIntegration.name.trim() && newIntegration.url.trim()) {
-			setIntegrations([...integrations, newIntegration])
+	// 🔹 Загружаем интеграции при загрузке компонента
+	useEffect(() => {
+		const loadIntegrations = async () => {
+			try {
+				const data = await fetchIntegrations()
+				setIntegrations(data)
+			} catch (error) {
+				console.error('Ошибка загрузки интеграций:', error)
+			}
+		}
+		loadIntegrations()
+	}, [])
+
+	// 🔹 Добавление новой интеграции
+	const handleAddIntegration = async () => {
+		if (!newIntegration.name.trim() || !newIntegration.url.trim()) return
+		setLoading(true)
+
+		try {
+			const addedIntegration = await createIntegration(
+				newIntegration.name,
+				newIntegration.url
+			)
+			setIntegrations([...integrations, addedIntegration])
 			setNewIntegration({ name: '', url: '' })
 			setOpen(false)
+		} catch (error) {
+			console.error('Ошибка добавления интеграции:', error)
+		} finally {
+			setLoading(false)
 		}
 	}
 
-	// Удаление интеграции
-	const handleDeleteIntegration = (name: string) => {
-		setIntegrations(integrations.filter(int => int.name !== name))
+	// 🔹 Удаление интеграции
+	const handleDeleteIntegration = async (id: string) => {
+		setLoading(true)
+
+		try {
+			await deleteIntegration(id)
+			setIntegrations(integrations.filter(int => int._id !== id))
+		} catch (error) {
+			console.error('Ошибка удаления интеграции:', error)
+		} finally {
+			setLoading(false)
+		}
 	}
 
 	return (
-		<Box sx={{ width: '100%', maxWidth: 350, position: 'relative' }}>
+		<Box sx={{ width: '100%', maxWidth: 400 }}>
 			<Typography variant='h6' sx={{ mb: 2 }}>
 				Интеграции
 			</Typography>
 
-			{/* Размытие блока */}
+			{/* Список интеграций */}
 			<Box
 				sx={{
 					borderRadius: 2,
@@ -53,13 +90,11 @@ const IntegrationBlock = () => {
 					padding: 2,
 					maxHeight: 250,
 					overflowY: 'auto',
-					filter: 'blur(5px)', // Применяем размытие
-					pointerEvents: 'none', // Блокируем взаимодействие
 				}}
 			>
-				{integrations.map((integration, index) => (
+				{integrations.map(integration => (
 					<Card
-						key={index}
+						key={integration._id}
 						sx={{
 							display: 'flex',
 							alignItems: 'center',
@@ -75,8 +110,8 @@ const IntegrationBlock = () => {
 						<Typography>{integration.name}</Typography>
 						<IconButton
 							size='small'
-							onClick={() => handleDeleteIntegration(integration.name)}
-							disabled
+							onClick={() => handleDeleteIntegration(integration._id)}
+							disabled={loading}
 						>
 							<DeleteIcon sx={{ color: isDarkMode ? '#ff4d4f' : 'red' }} />
 						</IconButton>
@@ -84,27 +119,33 @@ const IntegrationBlock = () => {
 				))}
 			</Box>
 
+			{/* Кнопка добавления */}
 			<Button
 				fullWidth
 				variant='contained'
 				startIcon={<AddIcon />}
 				sx={{ mt: 2 }}
 				onClick={() => setOpen(true)}
-				disabled
+				disabled={loading}
 			>
 				Добавить интеграцию
 			</Button>
 
+			{/* Модальное окно добавления */}
 			<ModalWrapper
 				title='Добавить интеграцию'
 				open={open}
 				onClose={() => setOpen(false)}
 				actions={
 					<>
-						<Button onClick={() => setOpen(false)} disabled>
+						<Button onClick={() => setOpen(false)} disabled={loading}>
 							Отмена
 						</Button>
-						<Button color='primary' onClick={handleAddIntegration} disabled>
+						<Button
+							color='primary'
+							onClick={handleAddIntegration}
+							disabled={loading}
+						>
 							Добавить
 						</Button>
 					</>
@@ -118,7 +159,7 @@ const IntegrationBlock = () => {
 						setNewIntegration({ ...newIntegration, name: e.target.value })
 					}
 					sx={{ mb: 2 }}
-					disabled
+					disabled={loading}
 				/>
 				<TextField
 					fullWidth
@@ -127,7 +168,7 @@ const IntegrationBlock = () => {
 					onChange={e =>
 						setNewIntegration({ ...newIntegration, url: e.target.value })
 					}
-					disabled
+					disabled={loading}
 				/>
 			</ModalWrapper>
 		</Box>

@@ -1,67 +1,32 @@
-import axios from 'axios'
+import api, { getAuthHeaders } from './apiClient'
 
-const API_URL = 'http://localhost:8000/statuses'
-
-const getAuthHeaders = () => {
-	const token = localStorage.getItem('accessToken')
-	return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-const getCsrfTokenFromCookie = () => {
-	return (
-		document.cookie
-			.split('; ')
-			.find(row => row.startsWith('XSRF-TOKEN='))
-			?.split('=')[1] || ''
-	)
-}
-
+// 🔹 Создание статуса
 export const createStatus = async (name: string, color: string) => {
-	try {
-		const response = await axios.post(
-			API_URL,
-			{ name, color },
-			{
-				withCredentials: true,
-				headers: {
-					...getAuthHeaders(),
-					'X-XSRF-TOKEN': getCsrfTokenFromCookie(),
-				},
-			}
-		)
-		return response.data
-	} catch (error) {
-		console.error(
-			'❌ Ошибка при создании статуса:',
-			error.response?.data || error
-		)
-		throw error
-	}
+	const headers = await getAuthHeaders()
+	const response = await api.post(
+		'/statuses',
+		{ name, color },
+		{ headers, withCredentials: true }
+	)
+	return response.data
 }
 
+// 🔹 Получение списка статусов
 export const fetchStatuses = async () => {
-	try {
-		const response = await axios.get(API_URL, {
-			withCredentials: true,
-			headers: getAuthHeaders(),
-		})
-		return response.data
-	} catch (error) {
-		throw error
-	}
+	const headers = await getAuthHeaders()
+	const response = await api.get('/statuses', {
+		headers,
+		withCredentials: true,
+	})
+	return response.data
 }
 
+// 🔹 Удаление статуса
 export const deleteStatus = async (id: string) => {
-	try {
-		const response = await axios.delete(`${API_URL}/${id}`, {
-			withCredentials: true,
-			headers: {
-				...getAuthHeaders(),
-				'X-XSRF-TOKEN': getCsrfTokenFromCookie(),
-			},
-		})
-		return response.data
-	} catch (error) {
-		throw error
-	}
+	const headers = await getAuthHeaders()
+	const response = await api.delete(`/statuses/${id}`, {
+		headers,
+		withCredentials: true,
+	})
+	return response.data
 }

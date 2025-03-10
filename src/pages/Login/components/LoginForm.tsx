@@ -1,62 +1,50 @@
-import { getCsrfToken, login } from '@api/authApi'
+import { login } from '@api/authApi'
 import { useAuth } from '@context/AuthContext'
 import { Box, Button, Checkbox, TextField, Typography } from '@mui/material'
 import { motion } from 'framer-motion'
 import { useSnackbar } from 'notistack' // ✅ Импортируем notistack
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const LoginForm = () => {
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
-	const [csrfToken, setCsrfToken] = useState('')
 	const [rememberMe, setRememberMe] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const navigate = useNavigate()
 	const { login: authLogin } = useAuth()
 	const { enqueueSnackbar } = useSnackbar() // ✅ Функция для показа алертов
 
-	// Загружаем CSRF-токен при загрузке компонента
-	useEffect(() => {
-		const fetchCsrf = async () => {
-			try {
-				const token = await getCsrfToken()
-				setCsrfToken(token)
-			} catch (error) {
-				console.error('Не удалось получить CSRF-токен')
-			}
+	const handleSubmit = async () => {
+		if (!email.trim() || !password) {
+			enqueueSnackbar('Введите email и пароль!', { variant: 'warning' })
+			return
 		}
 
-		fetchCsrf()
-	}, [])
-
-	const handleSubmit = async () => {
 		setLoading(true)
 
 		try {
-			const data = await login(email.trim(), password, rememberMe, csrfToken)
-			console.log('Успешный вход:', data)
+			const data = await login(email.trim(), password, rememberMe)
 
-			// ✅ Показываем успех
-			enqueueSnackbar('Успешный вход!', { variant: 'success' })
+			enqueueSnackbar('🎉 Успешный вход!', { variant: 'success' })
 
-			// Сохраняем токен через AuthContext
 			authLogin(data.refresh_token)
 
-			// 🔥 Делаем редирект через 1 секунду
-			setTimeout(() => {
-				navigate('/dashboard')
-			}, 1000)
+			setTimeout(() => navigate('/dashboard'), 1000)
 		} catch (error) {
-			console.error('Ошибка входа')
-
-			// ✅ Показываем ошибку
-			enqueueSnackbar('Ошибка: неправильный email или пароль!', {
-				variant: 'error',
-			})
+			enqueueSnackbar(
+				error.message || 'Ошибка: неправильный email или пароль!',
+				{
+					variant: 'error',
+				}
+			)
 		} finally {
 			setLoading(false)
 		}
+	}
+
+	const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === 'Enter') handleSubmit()
 	}
 
 	return (
@@ -80,6 +68,7 @@ const LoginForm = () => {
 					margin='normal'
 					value={email}
 					onChange={e => setEmail(e.target.value)}
+					onKeyPress={handleKeyPress}
 				/>
 				<TextField
 					label='Пароль'
@@ -88,6 +77,7 @@ const LoginForm = () => {
 					margin='normal'
 					value={password}
 					onChange={e => setPassword(e.target.value)}
+					onKeyPress={handleKeyPress}
 				/>
 				<Box display='flex' alignItems='center' mt={1}>
 					<Checkbox

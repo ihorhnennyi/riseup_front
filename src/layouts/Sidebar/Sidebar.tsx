@@ -1,3 +1,4 @@
+import { logout } from '@api/authApi'
 import {
 	BarChart,
 	DarkMode,
@@ -45,6 +46,10 @@ const menuItems = {
 const Sidebar: React.FC<SidebarProps> = ({ role, collapsed, setCollapsed }) => {
 	const { toggleTheme, isDarkMode } = useThemeContext()
 	const sidebarWidth = collapsed ? 80 : 240
+
+	const handleLogout = async () => {
+		await logout()
+	}
 
 	return (
 		<Drawer
@@ -122,13 +127,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, collapsed, setCollapsed }) => {
 						{!collapsed && <ListItemText primary='Тема' sx={{ ml: 2 }} />}
 					</ListItemButton>
 
-					<ListItemButton
-						sx={{
-							justifyContent: collapsed ? 'center' : 'flex-start',
-							px: 2,
-							width: '100%',
-						}}
-					>
+					<ListItemButton onClick={handleLogout}>
 						<ListItemIcon sx={{ minWidth: 40, justifyContent: 'center' }}>
 							<ExitToApp />
 						</ListItemIcon>

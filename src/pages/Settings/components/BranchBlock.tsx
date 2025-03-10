@@ -26,10 +26,11 @@ const BranchBlock = () => {
 	const [open, setOpen] = useState(false)
 	const [newBranch, setNewBranch] = useState({
 		name: '',
-		city: { _id: '', name: '' },
+		city: { _id: '', name: 'Выберите город' },
 	})
 	const [loading, setLoading] = useState(false)
 
+	// 🔹 Загружаем города при старте
 	useEffect(() => {
 		const fetchCitiesData = async () => {
 			try {
@@ -42,6 +43,7 @@ const BranchBlock = () => {
 		fetchCitiesData()
 	}, [])
 
+	// 🔹 Загружаем филиалы при старте
 	useEffect(() => {
 		const fetchBranchesData = async () => {
 			try {
@@ -54,6 +56,7 @@ const BranchBlock = () => {
 		fetchBranchesData()
 	}, [])
 
+	// 🔹 Добавление нового филиала
 	const handleAddBranch = async () => {
 		if (!newBranch.name.trim() || !newBranch.city._id) {
 			enqueueSnackbar('Введите название филиала и выберите город', {
@@ -67,7 +70,7 @@ const BranchBlock = () => {
 			const response = await createBranch(newBranch.name, newBranch.city._id)
 			setBranches([...branches, response])
 			enqueueSnackbar('Филиал добавлен', { variant: 'success' })
-			setNewBranch({ name: '', city: { _id: '', name: '' } })
+			setNewBranch({ name: '', city: { _id: '', name: 'Выберите город' } })
 			setOpen(false)
 		} catch (error) {
 			enqueueSnackbar('Ошибка при добавлении филиала', { variant: 'error' })
@@ -76,6 +79,7 @@ const BranchBlock = () => {
 		}
 	}
 
+	// 🔹 Удаление филиала
 	const handleDeleteBranch = async id => {
 		try {
 			await deleteBranch(id)
@@ -117,8 +121,7 @@ const BranchBlock = () => {
 						}}
 					>
 						<Typography>
-							{branch.name} (
-							{branch.city ? branch.city.name : 'Не указан город'})
+							{branch.name} ({branch.city?.name || 'Город не указан'})
 						</Typography>
 						<IconButton
 							size='small'
@@ -168,14 +171,22 @@ const BranchBlock = () => {
 					fullWidth
 					label='Город'
 					value={newBranch.city._id || ''}
-					onChange={e =>
-						setNewBranch({
-							...newBranch,
-							city: cities.find(city => city._id === e.target.value),
-						})
-					}
+					onChange={e => {
+						const selectedCity = cities.find(
+							city => city._id === e.target.value
+						)
+						if (selectedCity) {
+							setNewBranch({
+								...newBranch,
+								city: { _id: selectedCity._id, name: selectedCity.name },
+							})
+						}
+					}}
 					sx={{ mt: 2 }}
 				>
+					<MenuItem value='' disabled>
+						Выберите город
+					</MenuItem>
 					{cities.map(city => (
 						<MenuItem key={city._id} value={city._id}>
 							{city.name}
