@@ -1,6 +1,8 @@
+import { fetchBranches } from '@api/branchApi'
 import { createUser } from '@api/userApi'
 import { ModalWrapper } from '@components/index'
 import AutorenewIcon from '@mui/icons-material/Autorenew'
+import DeleteIcon from '@mui/icons-material/Delete'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import {
@@ -12,12 +14,19 @@ import {
 	TextField,
 	Typography,
 } from '@mui/material'
+
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+
+import dayjs from 'dayjs'
+
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+import { fetchIntegrations } from '@api/integrationApi'
+import { LocalizationProvider } from '@mui/x-date-pickers'
 
 const recruiterStatuses = ['Активен', 'Неактивен']
-const integrationTypes = ['Google', 'Facebook', 'LinkedIn', 'GitHub']
-const userRoles = ['ADMIN', 'USER']
+const userRoles = ['admin', 'user']
 
 const generatePassword = () => {
 	const charset =
@@ -35,6 +44,8 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 	const [showPassword, setShowPassword] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [branches, setBranches] = useState([])
+	const [integrations, setIntegrations] = useState([])
 
 	const [formData, setFormData] = useState({
 		firstName: '',
@@ -47,32 +58,66 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 		viber: '',
 		facebook: '',
 		photo: null,
-		role: 'USER',
+		role: 'user',
 		status: 'Активен',
 		email: '',
 		password: generatePassword(),
 		integrations: [],
+		branch: '',
 	})
 
+	useEffect(() => {
+		const loadBranches = async () => {
+			try {
+				const data = await fetchBranches()
+				setBranches(data)
+
+				const integrationData = await fetchIntegrations()
+				setIntegrations(integrationData)
+			} catch (error) {
+				console.error('Ошибка загрузки филиалов', error)
+			}
+		}
+		loadBranches()
+	}, [])
+
 	const handleChange = (field: string, value: any) => {
-		setFormData(prev => ({ ...prev, [field]: value }))
+		if (field === 'birthDate' && value) {
+			setFormData(prev => ({ ...prev, birthDate: dayjs(value).toDate() }))
+		} else {
+			setFormData(prev => ({ ...prev, [field]: value }))
+		}
 	}
 
 	const handleArrayChange = (index: number, field: string, value: string) => {
 		setFormData(prev => {
-			const newArray = [...prev.integrations]
-			newArray[index] = { ...newArray[index], [field]: value }
-			return { ...prev, integrations: newArray }
+			const updatedIntegrations = [...prev.integrations]
+			updatedIntegrations[index] = {
+				...updatedIntegrations[index],
+				[field]: value,
+			}
+			return { ...prev, integrations: updatedIntegrations }
 		})
 	}
 
 	const addIntegration = () => {
 		if (!newIntegration.trim()) return
+
+		const selectedIntegration = integrations.find(
+			integration => integration._id === newIntegration
+		)
+		if (!selectedIntegration) return
+
 		setFormData(prev => ({
 			...prev,
 			integrations: [
 				...prev.integrations,
-				{ type: newIntegration, login: '', password: '' },
+				{
+					id: selectedIntegration._id,
+					name: selectedIntegration.name,
+					login: '',
+					password: '',
+				}, // ✅ Добавляем логин и пароль
 			],
 		}))
 		setNewIntegration('')
@@ -96,32 +141,79 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 		setLoading(true)
 		setError(null)
 
-		if (!formData.firstName || !formData.lastName || !formData.email) {
-			setError('Заполните все обязательные поля!')
+		if (
+			!formData.firstName?.trim() ||
+			!formData.email?.trim() ||
+			!formData.password?.trim()
+		) {
+			setError('Все обязательные поля должны быть заполнены!')
 			setLoading(false)
 			return
 		}
 
 		try {
-			const userData = new FormData()
-			Object.keys(formData).forEach(key => {
-				if (key === 'photo' && formData.photo instanceof File) {
-					userData.append('photo', formData.photo)
-				} else if (
-					typeof formData[key] === 'object' &&
-					formData[key] !== null
-				) {
-					userData.append(key, JSON.stringify(formData[key]))
-				} else {
-					userData.append(key, formData[key])
-				}
+			// Создаём `FormData`
+			const formDataToSend = new FormData()
+			formDataToSend.append('firstName', formData.firstName.trim())
+			formDataToSend.append('lastName', formData.lastName?.trim() || '')
+			formDataToSend.append('middleName', formData.middleName?.trim() || '')
+			formDataToSend.append(
+				'birthDate',
+				formData.birthDate ? new Date(formData.birthDate).toISOString() : ''
+			)
+			formDataToSend.append('phone', formData.phone?.trim() || '')
+			formDataToSend.append('telegram', formData.telegram?.trim() || '')
+			formDataToSend.append('whatsapp', formData.whatsapp?.trim() || '')
+			formDataToSend.append('viber', formData.viber?.trim() || '')
+			formDataToSend.append('facebook', formData.facebook?.trim() || '')
+			formDataToSend.append('role', formData.role)
+			formDataToSend.append(
+				'isActive',
+				formData.status === 'Активен' ? 'true' : 'false'
+			)
+			formDataToSend.append('email', formData.email.trim())
+			formDataToSend.append('password', formData.password.trim())
+			formDataToSend.append('branch', formData.branch)
+
+			// Добавляем фото, если оно есть
+			if (formData.photo) {
+				formDataToSend.append('photo', formData.photo)
+			}
+
+			// Добавляем интеграции
+			formData.integrations.forEach((integration, index) => {
+				formDataToSend.append(`integrations[${index}][id]`, integration.id)
+				formDataToSend.append(
+					`integrations[${index}][login]`,
+					integration.login.trim()
+				)
+				formDataToSend.append(
+					`integrations[${index}][password]`,
+					integration.password.trim()
+				)
 			})
 
-			await createUser(userData)
+			console.log('Данные перед отправкой:', formDataToSend)
+
+			// Отправляем данные
+			console.log(
+				'Отправляемые данные:',
+				Object.fromEntries((formDataToSend as any).entries())
+			)
+			const response = await createUser(formDataToSend)
+			console.log('Ответ от сервера:', response)
+
 			setOpen(false)
-			onUserCreated()
+
+			// Обновляем таблицу
+			if (onUserCreated) {
+				onUserCreated()
+			}
 		} catch (err) {
-			setError('Ошибка при создании пользователя')
+			console.error('Ошибка при отправке данных:', err)
+			setError(
+				err.response?.data?.message || 'Ошибка при создании пользователя'
+			)
 		} finally {
 			setLoading(false)
 		}
@@ -179,11 +271,18 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 						value={formData.middleName}
 						onChange={e => handleChange('middleName', e.target.value)}
 					/>
-					<DatePicker
-						label='Дата рождения'
-						value={formData.birthDate}
-						onChange={date => handleChange('birthDate', date)}
-					/>
+					<LocalizationProvider dateAdapter={AdapterDayjs}>
+						<DatePicker
+							label='Дата рождения'
+							value={formData.birthDate ? dayjs(formData.birthDate) : null}
+							onChange={date =>
+								handleChange(
+									'birthDate',
+									date ? dayjs(date).toISOString() : null
+								)
+							}
+						/>
+					</LocalizationProvider>
 
 					<Typography variant='h6'>Данные для входа</Typography>
 					<TextField
@@ -245,13 +344,42 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 						value={newIntegration}
 						onChange={e => setNewIntegration(e.target.value)}
 					>
-						{integrationTypes.map(type => (
-							<MenuItem key={type} value={type}>
-								{type}
+						{integrations.map(integration => (
+							<MenuItem key={integration._id} value={integration._id}>
+								{integration.name}
 							</MenuItem>
 						))}
 					</TextField>
+
 					<Button onClick={addIntegration}>Добавить интеграцию</Button>
+
+					{formData.integrations.map((integration, index) => (
+						<Box
+							key={integration.id}
+							sx={{ display: 'flex', gap: 1, alignItems: 'center' }}
+						>
+							<TextField
+								label={`Логин (${integration.name})`}
+								value={integration.login}
+								onChange={e =>
+									handleArrayChange(index, 'login', e.target.value)
+								}
+								fullWidth
+							/>
+							<TextField
+								label='Пароль'
+								type='password'
+								value={integration.password}
+								onChange={e =>
+									handleArrayChange(index, 'password', e.target.value)
+								}
+								fullWidth
+							/>
+							<IconButton onClick={() => removeIntegration(index)}>
+								<DeleteIcon />
+							</IconButton>
+						</Box>
+					))}
 
 					<Typography variant='h6'>Роль</Typography>
 					<TextField
@@ -263,6 +391,20 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 						{userRoles.map(role => (
 							<MenuItem key={role} value={role}>
 								{role}
+							</MenuItem>
+						))}
+					</TextField>
+
+					<TextField
+						select
+						label='Филиал'
+						value={formData.branch}
+						onChange={e => handleChange('branch', e.target.value)}
+						sx={{ mt: 2 }}
+					>
+						{branches.map(branch => (
+							<MenuItem key={branch._id} value={branch._id}>
+								{branch.name}
 							</MenuItem>
 						))}
 					</TextField>

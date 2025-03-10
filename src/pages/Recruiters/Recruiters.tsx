@@ -1,11 +1,17 @@
 import { PageHeader } from '@components/index'
 import { Box, TextField } from '@mui/material'
 import { useState } from 'react'
-import AddUserModal from './components/AddUserModal'
+import AddRecruiterModal from './components/AddUserModal'
 import RecruitersTable from './components/RecruitersTable'
 
 const Recruiters = () => {
 	const [search, setSearch] = useState('')
+	const [reloadTable, setReloadTable] = useState(false)
+
+	// Обновляем таблицу после добавления пользователя
+	const handleUserCreated = () => {
+		setReloadTable(prev => !prev) // 👈 Меняем состояние, чтобы триггерить обновление
+	}
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -29,10 +35,11 @@ const Recruiters = () => {
 					onChange={e => setSearch(e.target.value)}
 					sx={{ flex: 1, maxWidth: 400 }}
 				/>
-				<AddUserModal />
+				<AddRecruiterModal onUserCreated={handleUserCreated} />
 			</Box>
 
-			<RecruitersTable />
+			{/* ✅ Передаём reloadTable в таблицу */}
+			<RecruitersTable reloadTable={reloadTable} />
 		</Box>
 	)
 }

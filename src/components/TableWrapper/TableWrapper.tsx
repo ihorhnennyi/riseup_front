@@ -8,37 +8,22 @@ import {
 	TableHead,
 	TableRow,
 } from '@mui/material'
-import { motion } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 interface TableWrapperProps {
 	columns: string[]
 	data: any[][]
+	onRowClick?: (id: string) => void // ✅ Функция для клика на строку
 }
 
-const TableWrapper: React.FC<TableWrapperProps> = ({ columns, data }) => {
+const TableWrapper: React.FC<TableWrapperProps> = ({
+	columns,
+	data,
+	onRowClick,
+}) => {
 	const containerRef = useRef<HTMLDivElement | null>(null)
-	const [maxHeight, setMaxHeight] = useState<number | 'auto'>('auto')
-
-	useEffect(() => {
-		const updateHeight = () => {
-			if (containerRef.current) {
-				const rect = containerRef.current.getBoundingClientRect()
-				const windowHeight = window.innerHeight
-				const calculatedHeight = windowHeight - rect.top - 30
-				setMaxHeight(Math.max(calculatedHeight, 300)) // Минимальная высота 300px
-			}
-		}
-
-		updateHeight()
-		window.addEventListener('resize', updateHeight)
-		return () => window.removeEventListener('resize', updateHeight)
-	}, [])
-
-	const rowVariants = {
-		hidden: { opacity: 0, y: 10 },
-		visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-	}
+	const navigate = useNavigate()
 
 	return (
 		<Box sx={{ width: '100%', overflowX: 'auto' }}>
@@ -46,73 +31,69 @@ const TableWrapper: React.FC<TableWrapperProps> = ({ columns, data }) => {
 				component={Paper}
 				ref={containerRef}
 				sx={{
-					maxHeight: 'calc(100vh - 200px)', // Ограничение по высоте экрана
-					overflowY: 'auto', // Вертикальный скролл
-					overflowX: 'auto', // Горизонтальный скролл
-					backgroundColor: theme => theme.palette.background.paper,
-					boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+					boxShadow: 3,
 					borderRadius: '12px',
+					overflowX: 'auto',
+					overflowY: 'auto',
+					backgroundColor: theme => theme.palette.background.paper,
 				}}
 			>
-				<Table stickyHeader sx={{ minWidth: 900, tableLayout: 'auto' }}>
+				<Table stickyHeader sx={{ minWidth: '500px', tableLayout: 'auto' }}>
 					<TableHead>
 						<TableRow>
+							<TableCell sx={{ width: '50px', textAlign: 'center' }}>
+								#
+							</TableCell>
 							{columns.map((column, index) => (
 								<TableCell
 									key={index}
-									sx={{
-										fontWeight: 'bold',
-										background: theme =>
-											theme.palette.mode === 'dark' ? '#1E1E2F' : '#F4F4F4',
-										color: theme => theme.palette.text.primary,
-										padding: '12px',
-										whiteSpace: 'nowrap',
-									}}
+									sx={{ minWidth: '120px', textAlign: 'center' }}
 								>
-									{column}
+									{column.toUpperCase()}
 								</TableCell>
 							))}
 						</TableRow>
 					</TableHead>
-					<TableBody
-						component={motion.tbody}
-						initial='hidden'
-						animate='visible'
-						variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-					>
+					<TableBody>
 						{data.length > 0 ? (
 							data.map((row, rowIndex) => (
-								<motion.tr key={rowIndex} variants={rowVariants}>
-									{row.map((cell, cellIndex) => (
+								<TableRow
+									key={rowIndex}
+									sx={{
+										cursor: 'pointer',
+										'&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+									}}
+									onClick={() => onRowClick?.(row[0])} // ✅ Переход по клику
+								>
+									<TableCell sx={{ textAlign: 'center' }}>
+										{rowIndex + 1}
+									</TableCell>
+
+									{/* Данные */}
+									{row.slice(1).map((cell, cellIndex) => (
 										<TableCell
 											key={cellIndex}
 											sx={{
-												padding: '12px',
-												height: '48px',
 												whiteSpace: 'nowrap',
-												wordBreak: 'break-word',
 												overflow: 'hidden',
 												textOverflow: 'ellipsis',
+												textAlign: 'center',
 											}}
 										>
 											{cell}
 										</TableCell>
 									))}
-								</motion.tr>
+								</TableRow>
 							))
 						) : (
-							<motion.tr variants={rowVariants}>
+							<TableRow>
 								<TableCell
-									colSpan={columns.length}
-									sx={{
-										textAlign: 'center',
-										py: 2,
-										height: '48px',
-									}}
+									colSpan={columns.length + 1}
+									sx={{ textAlign: 'center', py: 3 }}
 								>
 									Нет данных
 								</TableCell>
-							</motion.tr>
+							</TableRow>
 						)}
 					</TableBody>
 				</Table>

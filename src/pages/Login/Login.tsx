@@ -14,17 +14,16 @@ const LoginPage = () => {
 			{/* Левая часть с формой */}
 			<Box
 				sx={{
-					width: '60%',
+					width: '50%',
 					height: '100%',
 					backgroundColor: '#fff',
-					padding: 4,
+					padding: 5,
 					display: 'flex',
 					flexDirection: 'column',
 					justifyContent: 'center',
 					alignItems: 'center',
 					boxShadow: 3,
-					borderRadius: 2,
-					alignSelf: 'center',
+					borderRadius: '0 10px 10px 0',
 				}}
 			>
 				<LoginForm />
@@ -33,7 +32,7 @@ const LoginPage = () => {
 			{/* Правая часть с графикой */}
 			<Box
 				sx={{
-					width: '60%',
+					width: '50%',
 					height: '100%',
 					backgroundColor: '#F4F4F8',
 					display: 'flex',
@@ -68,9 +67,16 @@ const LoginPage = () => {
 
 			{/* Верхний левый угол */}
 			<Typography
-				sx={{ position: 'absolute', top: 20, left: 30, fontWeight: 'bold' }}
+				sx={{
+					position: 'absolute',
+					top: 20,
+					left: 30,
+					fontWeight: 'bold',
+					color: '#6A5ACD',
+					fontSize: 20,
+				}}
 			>
-				● Untitled UI
+				● RiseUp
 			</Typography>
 
 			{/* Нижний левый угол */}
@@ -79,11 +85,11 @@ const LoginPage = () => {
 					position: 'absolute',
 					bottom: 20,
 					left: 30,
-					color: 'gray',
+					color: '#777',
 					fontSize: 14,
 				}}
 			>
-				© Untitled UI 2077
+				© RiseUp 2025
 			</Typography>
 		</Box>
 	)
