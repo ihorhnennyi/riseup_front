@@ -83,7 +83,8 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 
 	const handleChange = (field: string, value: any) => {
 		if (field === 'birthDate' && value) {
-			setFormData(prev => ({ ...prev, birthDate: dayjs(value).toDate() }))
+			const formattedDate = new Date(value).toISOString() // ✅ Преобразуем в ISO 8601
+			setFormData(prev => ({ ...prev, birthDate: formattedDate }))
 		} else {
 			setFormData(prev => ({ ...prev, [field]: value }))
 		}
@@ -133,7 +134,10 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (file) {
-			setFormData(prev => ({ ...prev, photo: file }))
+			console.log('Загруженный файл:', file)
+			setFormData(prev => ({ ...prev, photo: file })) // 🟢 Теперь точно сохраняем файл
+		} else {
+			console.error('Ошибка загрузки фото')
 		}
 	}
 
@@ -152,65 +156,49 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 		}
 
 		try {
-			// Создаём `FormData`
-			const formDataToSend = new FormData()
-			formDataToSend.append('firstName', formData.firstName.trim())
-			formDataToSend.append('lastName', formData.lastName?.trim() || '')
-			formDataToSend.append('middleName', formData.middleName?.trim() || '')
-			formDataToSend.append(
-				'birthDate',
-				formData.birthDate ? new Date(formData.birthDate).toISOString() : ''
-			)
-			formDataToSend.append('phone', formData.phone?.trim() || '')
-			formDataToSend.append('telegram', formData.telegram?.trim() || '')
-			formDataToSend.append('whatsapp', formData.whatsapp?.trim() || '')
-			formDataToSend.append('viber', formData.viber?.trim() || '')
-			formDataToSend.append('facebook', formData.facebook?.trim() || '')
-			formDataToSend.append('role', formData.role)
-			formDataToSend.append(
-				'isActive',
-				formData.status === 'Активен' ? 'true' : 'false'
-			)
-			formDataToSend.append('email', formData.email.trim())
-			formDataToSend.append('password', formData.password.trim())
-			formDataToSend.append('branch', formData.branch)
+			const userJson = {
+				firstName: formData.firstName.trim(),
+				lastName: formData.lastName.trim() || '',
+				middleName: formData.middleName.trim() || '',
+				birthDate: formData.birthDate
+					? new Date(formData.birthDate).toISOString()
+					: null,
+				phone: formData.phone.trim() || null,
+				telegram: formData.telegram.trim() || null,
+				whatsapp: formData.whatsapp.trim() || null,
+				viber: formData.viber.trim() || null,
+				facebook: formData.facebook.trim() || null,
+				role: formData.role,
+				isActive: formData.status === 'Активен',
+				email: formData.email.trim(),
+				password: formData.password.trim(),
+				branch: formData.branch,
+				integrations: formData.integrations,
+			}
 
-			// Добавляем фото, если оно есть
-			if (formData.photo) {
+			const formDataToSend = new FormData()
+			formDataToSend.append('userData', JSON.stringify(userJson))
+
+			// Добавляем файл фото, если есть
+			if (formData.photo instanceof File) {
 				formDataToSend.append('photo', formData.photo)
 			}
 
-			// Добавляем интеграции
-			formData.integrations.forEach((integration, index) => {
-				formDataToSend.append(`integrations[${index}][id]`, integration.id)
-				formDataToSend.append(
-					`integrations[${index}][login]`,
-					integration.login.trim()
-				)
-				formDataToSend.append(
-					`integrations[${index}][password]`,
-					integration.password.trim()
-				)
-			})
-
-			console.log('Данные перед отправкой:', formDataToSend)
-
-			// Отправляем данные
 			console.log(
-				'Отправляемые данные:',
+				'🚀 Отправляемые данные:',
 				Object.fromEntries((formDataToSend as any).entries())
 			)
+
+			// Отправляем запрос
 			const response = await createUser(formDataToSend)
-			console.log('Ответ от сервера:', response)
+			console.log('✅ Ответ сервера:', response)
 
 			setOpen(false)
-
-			// Обновляем таблицу
 			if (onUserCreated) {
 				onUserCreated()
 			}
 		} catch (err) {
-			console.error('Ошибка при отправке данных:', err)
+			console.error('❌ Ошибка при отправке данных:', err)
 			setError(
 				err.response?.data?.message || 'Ошибка при создании пользователя'
 			)
@@ -275,12 +263,7 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 						<DatePicker
 							label='Дата рождения'
 							value={formData.birthDate ? dayjs(formData.birthDate) : null}
-							onChange={date =>
-								handleChange(
-									'birthDate',
-									date ? dayjs(date).toISOString() : null
-								)
-							}
+							onChange={date => handleChange('birthDate', date?.toISOString())}
 						/>
 					</LocalizationProvider>
 

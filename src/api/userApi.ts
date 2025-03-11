@@ -15,13 +15,12 @@ export const fetchUserById = async (id: string) => {
 	return response.data
 }
 
-export const createUser = async (userData: any) => {
+export const createUser = async (userData: FormData) => {
 	const headers = await getAuthHeaders()
-	const response = await api.post('/users', userData, {
-		headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+	return api.post('/users', userData, {
+		headers, // НЕ передаем 'Content-Type'
 		withCredentials: true,
 	})
-	return response.data
 }
 
 export const deleteUser = async (id: string) => {

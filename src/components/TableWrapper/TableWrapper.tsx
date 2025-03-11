@@ -9,12 +9,11 @@ import {
 	TableRow,
 } from '@mui/material'
 import { useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 interface TableWrapperProps {
 	columns: string[]
 	data: any[][]
-	onRowClick?: (id: string) => void // ✅ Функция для клика на строку
+	onRowClick?: (id: string) => void
 }
 
 const TableWrapper: React.FC<TableWrapperProps> = ({
@@ -23,10 +22,15 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
 	onRowClick,
 }) => {
 	const containerRef = useRef<HTMLDivElement | null>(null)
-	const navigate = useNavigate()
 
 	return (
-		<Box sx={{ width: '100%', overflowX: 'auto' }}>
+		<Box
+			sx={{
+				width: '100%', // ✅ Контейнер теперь адаптивный
+				overflowX: 'auto', // ✅ Если таблица больше контейнера, появляется скролл внутри
+				maxWidth: '100%', // ✅ Таблица не выходит за границы родительского контейнера
+			}}
+		>
 			<TableContainer
 				component={Paper}
 				ref={containerRef}
@@ -36,9 +40,10 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
 					overflowX: 'auto',
 					overflowY: 'auto',
 					backgroundColor: theme => theme.palette.background.paper,
+					maxWidth: '100%', // ✅ Теперь таблица не выходит за границы Layout
 				}}
 			>
-				<Table stickyHeader sx={{ minWidth: '500px', tableLayout: 'auto' }}>
+				<Table stickyHeader sx={{ minWidth: '100%', tableLayout: 'auto' }}>
 					<TableHead>
 						<TableRow>
 							<TableCell sx={{ width: '50px', textAlign: 'center' }}>
@@ -63,13 +68,12 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
 										cursor: 'pointer',
 										'&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
 									}}
-									onClick={() => onRowClick?.(row[0])} // ✅ Переход по клику
+									onClick={() => onRowClick?.(row[0])}
 								>
 									<TableCell sx={{ textAlign: 'center' }}>
 										{rowIndex + 1}
 									</TableCell>
 
-									{/* Данные */}
 									{row.slice(1).map((cell, cellIndex) => (
 										<TableCell
 											key={cellIndex}

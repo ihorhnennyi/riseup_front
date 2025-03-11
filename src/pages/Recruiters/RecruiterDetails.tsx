@@ -1,20 +1,28 @@
+import { fetchBranches } from '@api/branchApi'
 import { fetchUserById } from '@api/userApi'
-import { PageHeader } from '@components/index'
-import { Box, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import RecruiterCard from './components/RecruiterCard'
 
 const RecruiterDetails = () => {
-	const { id } = useParams() // Получаем ID из URL
+	const { id } = useParams()
 	const [recruiter, setRecruiter] = useState<any>(null)
+	const [branchName, setBranchName] = useState<string | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
 	useEffect(() => {
 		const loadRecruiter = async () => {
 			try {
-				const data = await fetchUserById(id!) // Получаем данные рекрутера
+				const data = await fetchUserById(id!)
 				setRecruiter(data)
+
+				// Получаем название филиала
+				if (data.branch) {
+					const branches = await fetchBranches()
+					const branch = branches.find((b: any) => b._id === data.branch)
+					setBranchName(branch ? branch.name : 'Не указан')
+				}
 			} catch (err) {
 				setError('Ошибка загрузки рекрутера')
 			} finally {
@@ -29,25 +37,23 @@ const RecruiterDetails = () => {
 	if (error) return <div style={{ color: 'red' }}>{error}</div>
 
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-			<PageHeader
-				title={`${recruiter.firstName} ${recruiter.lastName}`}
-				description='Информация о рекрутере'
+		<div style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
+			<RecruiterCard
+				firstName={recruiter.firstName}
+				lastName={recruiter.lastName}
+				middleName={recruiter.middleName}
+				photo={recruiter.photo}
+				role={recruiter.role}
+				isActive={recruiter.isActive}
+				email={recruiter.email}
+				phone={recruiter.phone}
+				telegram={recruiter.telegram}
+				whatsapp={recruiter.whatsapp}
+				viber={recruiter.viber}
+				branchName={branchName}
+				onEdit={() => console.log('Редактирование')}
 			/>
-
-			<Typography>
-				<strong>Email:</strong> {recruiter.email}
-			</Typography>
-			<Typography>
-				<strong>Телефон:</strong> {recruiter.phone || 'Не указан'}
-			</Typography>
-			<Typography>
-				<strong>Филиал:</strong> {recruiter.branch || 'Не указан'}
-			</Typography>
-			<Typography>
-				<strong>Статус:</strong> {recruiter.isActive ? 'Активен' : 'Неактивен'}
-			</Typography>
-		</Box>
+		</div>
 	)
 }
 
