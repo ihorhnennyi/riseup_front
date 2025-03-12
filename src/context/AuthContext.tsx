@@ -1,4 +1,4 @@
-import axios from 'axios'
+import api from '@api/apiClient'
 import {
 	createContext,
 	ReactNode,
@@ -9,50 +9,61 @@ import {
 
 interface AuthContextType {
 	isAuthenticated: boolean
-	login: (token: string) => void
+	role: 'admin' | 'user' | null
+	login: (token: string, userRole: 'admin' | 'user') => void
 	logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
+	const [isAuthenticated, setIsAuthenticated] = useState(false)
+	const [role, setRole] = useState<'admin' | 'user' | null>(null)
+	const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
-	// Функция логина
-	const login = (token: string) => {
-		localStorage.setItem('refresh_token', token)
-		setIsAuthenticated(true)
-	}
-
-	// Функция выхода
-	const logout = async () => {
-		await axios.post(
-			'http://localhost:8000/auth/logout',
-			{},
-			{ withCredentials: true }
-		)
-		localStorage.removeItem('refresh_token')
-		setIsAuthenticated(false)
-		window.location.href = '/login'
-	}
-
-	// Проверка сессии при каждом рендере
 	useEffect(() => {
 		const checkAuth = async () => {
 			try {
-				const response = await axios.get('http://localhost:8000/auth/session', {
+				const response = await api.get('/auth/session', {
 					withCredentials: true,
 				})
 				setIsAuthenticated(response.data.isAuthenticated)
-			} catch {
+				setRole(response.data.role || null)
+				localStorage.setItem('user_role', response.data.role || '')
+			} catch (error) {
+				console.error('Ошибка при проверке сессии:', error)
 				setIsAuthenticated(false)
+				setRole(null)
+				localStorage.removeItem('user_role')
+			} finally {
+				setIsCheckingAuth(false)
 			}
 		}
 		checkAuth()
 	}, [])
 
+	const login = (token: string, userRole: 'admin' | 'user') => {
+		localStorage.setItem('access_token', token)
+		localStorage.setItem('user_role', userRole)
+		setIsAuthenticated(true)
+		setRole(userRole)
+	}
+
+	const logout = async () => {
+		try {
+			await api.post('/auth/logout', {}, { withCredentials: true })
+		} catch (error) {
+			console.error('Ошибка при выходе:', error)
+		}
+		localStorage.removeItem('user_role')
+		setIsAuthenticated(false)
+		setRole(null)
+	}
+
+	if (isCheckingAuth) return <div>Загрузка...</div>
+
 	return (
-		<AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+		<AuthContext.Provider value={{ isAuthenticated, role, login, logout }}>
 			{children}
 		</AuthContext.Provider>
 	)
@@ -60,7 +71,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
 	const context = useContext(AuthContext)
-	if (!context)
+	if (!context) {
 		throw new Error('useAuth должен использоваться внутри AuthProvider')
+	}
 	return context
 }

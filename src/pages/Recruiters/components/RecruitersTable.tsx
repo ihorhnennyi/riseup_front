@@ -84,8 +84,6 @@ const RecruitersTable = ({ reloadTable }) => {
 		'Telegram',
 		'WhatsApp',
 		'Viber',
-		'Facebook',
-		'Фото',
 		'Филиал',
 		'Роль',
 		'Статус',
@@ -106,8 +104,7 @@ const RecruitersTable = ({ reloadTable }) => {
 		user.telegram || '-',
 		user.whatsapp || '-',
 		user.viber || '-',
-		user.facebook || '-',
-		user.photo ? <img src={user.photo} alt='Фото' width={40} /> : '-',
+
 		branches[user.branch] || 'Не указан',
 		user.role || '-',
 		user.isActive ? 'Активен' : 'Неактивен',

@@ -1,5 +1,4 @@
-import { getUserIdFromToken } from '@api/authApi'
-import { createLead } from '@api/leadsApi'
+import { fetchLeadById, updateLead } from '@api/leadsApi'
 import { fetchStatuses } from '@api/statusApi'
 import { ModalWrapper } from '@components/index'
 import {
@@ -9,6 +8,7 @@ import {
 	Checkbox,
 	FormControlLabel,
 	MenuItem,
+	Snackbar,
 	TextField,
 	Typography,
 } from '@mui/material'
@@ -17,15 +17,12 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-const AddCandidateModal = ({ onLeadAdded }) => {
+const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 	const navigate = useNavigate()
-	const [open, setOpen] = useState(false)
-	const [statuses, setStatuses] = useState([])
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-
-	const accessToken = localStorage.getItem('access_token') || ''
-	const recruiterId = getUserIdFromToken()
+	const [successMessage, setSuccessMessage] = useState(false)
+	const [statuses, setStatuses] = useState([])
 
 	const [formData, setFormData] = useState({
 		name: '',
@@ -38,17 +35,39 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 		telegram: '',
 		salaryExpectation: '',
 		relocation: false,
-		remoteWork: true,
+		remoteWork: false,
 		workSchedule: [],
 		portfolio: [''],
 		notes: '',
 		statusId: '',
-		statusEndDate: '',
+		statusEndDate: null,
 	})
 
 	useEffect(() => {
-		fetchStatuses().then(setStatuses).catch(console.error)
-	}, [])
+		const loadLeadData = async () => {
+			try {
+				const leadData = await fetchLeadById(leadId)
+				console.log('📦 Полученные данные лида:', leadData) // Логируем данные
+
+				setFormData(prev => ({
+					...prev,
+					...leadData, // Загружаем все данные
+					statusId: leadData.statusId?._id || '',
+					statusEndDate: leadData.statusEndDate
+						? dayjs(leadData.statusEndDate)
+						: null,
+				}))
+			} catch (err) {
+				console.error('Ошибка загрузки лида:', err)
+				setError('Не удалось загрузить данные лида')
+			}
+		}
+
+		if (leadId) {
+			loadLeadData()
+			fetchStatuses().then(setStatuses).catch(console.error)
+		}
+	}, [leadId])
 
 	const handleChange = (field, value) => {
 		setFormData(prev => ({ ...prev, [field]: value }))
@@ -57,19 +76,9 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (file) {
-			console.log('📸 Загруженный файл:', file)
-			console.log('📌 Название:', file.name)
-			console.log('📌 Тип:', file.type)
-			console.log('📌 Размер:', file.size)
 			setFormData(prev => ({ ...prev, photo: file }))
-		} else {
-			console.error('❌ Ошибка загрузки фото')
 		}
 	}
-
-	useEffect(() => {
-		console.log('✅ Фото в formData обновилось:', formData.photo)
-	}, [formData.photo])
 
 	const handleSubmit = async () => {
 		setLoading(true)
@@ -82,54 +91,48 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 		}
 
 		try {
-			// Формируем данные формы для отправки
 			const formDataToSend = new FormData()
-			console.log('ID текущего рекрутера:', recruiterId)
-			// Добавляем данные лида
 			formDataToSend.append(
 				'leadData',
 				JSON.stringify({
-					name: formData.name?.trim() || '',
-					surname: formData.surname?.trim() || '',
-					middleName: formData.middleName?.trim() || '',
-					email: formData.email?.trim() || '',
-					phone: formData.phone?.trim() || '',
+					name: formData.name,
+					surname: formData.surname,
+					middleName: formData.middleName,
+					email: formData.email,
+					phone: formData.phone,
 					age: formData.age ? Number(formData.age) : 0,
-					telegram: formData.telegram?.trim() || '',
-					salaryExpectation: formData.salaryExpectation?.trim() || '',
-					relocation: !!formData.relocation,
-					remoteWork: !!formData.remoteWork,
-					workSchedule: Array.isArray(formData.workSchedule)
-						? formData.workSchedule
-						: [],
-					portfolio: Array.isArray(formData.portfolio)
-						? formData.portfolio
-						: [],
-					notes: formData.notes?.trim() || '',
-					statusId: formData.statusId?.trim() || null,
+					telegram: formData.telegram,
+					salaryExpectation: formData.salaryExpectation,
+					relocation: formData.relocation,
+					remoteWork: formData.remoteWork,
+					workSchedule: formData.workSchedule,
+					portfolio: formData.portfolio,
+					notes: formData.notes,
+					statusId: formData.statusId,
 					statusEndDate: formData.statusEndDate
 						? new Date(formData.statusEndDate).toISOString()
 						: undefined,
-					recruiterId,
 				})
 			)
 
-			// Если фото присутствует, добавляем его в форму
 			if (formData.photo) {
 				formDataToSend.append('photo', formData.photo)
 			}
 
-			// Отправляем форму с данными на сервер
-			await createLead(formDataToSend)
+			await updateLead(leadId, formDataToSend)
 
-			// Логируем весь FormData для отладки
+			// 🔄 Автоматически загружаем свежие данные
+			const updatedLead = await fetchLeadById(leadId)
 
-			setOpen(false)
-			onLeadAdded()
-			navigate('/candidates')
+			onLeadUpdated(updatedLead) // ✅ Передаём обновлённые данные
+			setSuccessMessage(true)
+
+			setTimeout(() => {
+				onClose()
+			}, 500)
 		} catch (err) {
-			console.error('Ошибка при создании лида:', err)
-			setError('Ошибка при создании лида')
+			console.error('Ошибка при обновлении лида:', err)
+			setError('Ошибка при обновлении лида')
 		} finally {
 			setLoading(false)
 		}
@@ -137,23 +140,19 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 
 	return (
 		<>
-			<Button variant='contained' onClick={() => setOpen(true)}>
-				Добавить кандидата
-			</Button>
-
 			<ModalWrapper
-				title='Добавление кандидата'
-				open={open}
-				onClose={() => setOpen(false)}
+				title='Редактирование кандидата'
+				open={!!leadId}
+				onClose={onClose}
 				actions={
 					<>
-						<Button onClick={() => setOpen(false)}>Отмена</Button>
+						<Button onClick={onClose}>Отмена</Button>
 						<Button
 							color='primary'
 							onClick={handleSubmit}
 							disabled={loading || !formData.name?.trim()}
 						>
-							{loading ? 'Добавление...' : 'Добавить'}
+							{loading ? 'Сохранение...' : 'Сохранить'}
 						</Button>
 					</>
 				}
@@ -181,27 +180,11 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 						label='Имя'
 						value={formData.name}
 						onChange={e => handleChange('name', e.target.value)}
-						error={
-							!formData.name?.trim() &&
-							error === 'Имя обязательно для заполнения'
-						}
-						helperText={
-							!formData.name?.trim() &&
-							error === 'Имя обязательно для заполнения'
-								? 'Пожалуйста, введите имя'
-								: ''
-						}
 					/>
-
 					<TextField
 						label='Фамилия'
 						value={formData.surname}
 						onChange={e => handleChange('surname', e.target.value)}
-					/>
-					<TextField
-						label='Отчество'
-						value={formData.middleName}
-						onChange={e => handleChange('middleName', e.target.value)}
 					/>
 					<TextField
 						label='Email'
@@ -212,17 +195,6 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 						label='Телефон'
 						value={formData.phone}
 						onChange={e => handleChange('phone', e.target.value)}
-					/>
-					<TextField
-						label='Telegram'
-						value={formData.telegram}
-						onChange={e => handleChange('telegram', e.target.value)}
-					/>
-					<TextField
-						label='Возраст'
-						type='number'
-						value={formData.age}
-						onChange={e => handleChange('age', e.target.value)}
 					/>
 
 					<TextField
@@ -238,17 +210,15 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 						))}
 					</TextField>
 
-					{formData.statusId && (
-						<DatePicker
-							label='Дата завершения статуса'
-							value={
-								formData.statusEndDate ? dayjs(formData.statusEndDate) : null
-							}
-							onChange={date =>
-								handleChange('statusEndDate', date?.toISOString() || '')
-							}
-						/>
-					)}
+					<DatePicker
+						label='Дата завершения статуса'
+						value={
+							formData.statusEndDate ? dayjs(formData.statusEndDate) : null
+						}
+						onChange={date =>
+							handleChange('statusEndDate', date?.toISOString() || '')
+						}
+					/>
 
 					<Typography variant='h6'>Заработная плата</Typography>
 					<TextField
@@ -287,11 +257,15 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 					/>
 				</Box>
 			</ModalWrapper>
+
+			<Snackbar
+				open={successMessage}
+				autoHideDuration={2000}
+				onClose={() => setSuccessMessage(false)}
+				message='Данные успешно сохранены!'
+			/>
 		</>
 	)
 }
 
-export default AddCandidateModal
-function loadLeads() {
-	throw new Error('Function not implemented.')
-}
+export default EditCandidateModal

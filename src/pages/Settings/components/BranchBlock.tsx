@@ -1,5 +1,4 @@
 import { createBranch, deleteBranch, fetchBranches } from '@api/branchApi'
-import { fetchCities } from '@api/cityApi'
 import ModalWrapper from '@components/ModalWrapper'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -16,32 +15,23 @@ import {
 import { useSnackbar } from 'notistack'
 import { useEffect, useState } from 'react'
 
-const BranchBlock = () => {
+type City = {
+	_id: string
+	name: string
+}
+
+const BranchBlock = ({ cities }: { cities: City[] }) => {
 	const theme = useTheme()
 	const isDarkMode = theme.palette.mode === 'dark'
 	const { enqueueSnackbar } = useSnackbar()
 
 	const [branches, setBranches] = useState([])
-	const [cities, setCities] = useState([])
 	const [open, setOpen] = useState(false)
 	const [newBranch, setNewBranch] = useState({
 		name: '',
 		city: { _id: '', name: 'Выберите город' },
 	})
 	const [loading, setLoading] = useState(false)
-
-	// 🔹 Загружаем города при старте
-	useEffect(() => {
-		const fetchCitiesData = async () => {
-			try {
-				const cityData = await fetchCities()
-				setCities(cityData)
-			} catch (error) {
-				enqueueSnackbar('Ошибка загрузки городов', { variant: 'error' })
-			}
-		}
-		fetchCitiesData()
-	}, [])
 
 	// 🔹 Загружаем филиалы при старте
 	useEffect(() => {

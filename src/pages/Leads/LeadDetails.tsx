@@ -13,12 +13,18 @@ import { motion } from 'framer-motion' // Импортируем motion
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
+import { fetchStatuses } from '@api/statusApi'
+import EditCandidateModal from './components/EditCandidateModal'
+
 const LeadDetails = () => {
 	const { id } = useParams()
 	const navigate = useNavigate() // Используем navigate для навигации назад
 	const [lead, setLead] = useState<any>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+	const [editModalOpen, setEditModalOpen] = useState(false)
+
+	const [statuses, setStatuses] = useState([])
 
 	useEffect(() => {
 		const loadLead = async () => {
@@ -31,6 +37,10 @@ const LeadDetails = () => {
 			try {
 				const leadData = await fetchLeadById(id)
 				setLead(leadData)
+
+				// ✅ Загружаем статусы
+				const statusesData = await fetchStatuses()
+				setStatuses(statusesData)
 			} catch (err) {
 				setError('Unable to fetch lead data')
 			} finally {
@@ -40,7 +50,6 @@ const LeadDetails = () => {
 
 		loadLead()
 	}, [id])
-
 	if (loading) return <div>Загрузка...</div>
 	if (error) return <div style={{ color: 'red' }}>{error}</div>
 
@@ -100,7 +109,11 @@ const LeadDetails = () => {
 								Возраст: {lead?.age || 'N/A'}
 							</Typography>
 							<Typography variant='body1'>
-								Статус: {lead?.status || 'N/A'}
+								Статус:{' '}
+								{lead?.statusId && statuses.length
+									? statuses.find(s => s._id === lead.statusId)?.name ||
+									  'Без статуса'
+									: 'Загрузка статуса...'}
 							</Typography>
 						</Grid>
 					</Grid>
@@ -147,10 +160,25 @@ const LeadDetails = () => {
 						<Button
 							variant='contained'
 							color='primary'
-							onClick={() => alert('Редактировать лида')}
+							onClick={() => setEditModalOpen(true)}
 						>
 							Редактировать
 						</Button>
+
+						{editModalOpen && (
+							<EditCandidateModal
+								leadId={lead._id}
+								onClose={() => setEditModalOpen(false)}
+								onLeadUpdated={updatedLead => {
+									setLead(prev => ({
+										...prev,
+										...updatedLead, // ✅ Обновляем данные сразу
+										statusId:
+											updatedLead.statusId?._id || updatedLead.statusId || '',
+									}))
+								}}
+							/>
+						)}
 						<Button
 							variant='outlined'
 							color='error'

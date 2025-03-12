@@ -14,7 +14,7 @@ import {
 import { motion } from 'framer-motion'
 import { useSnackbar } from 'notistack'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const LoginForm = () => {
 	const [email, setEmail] = useState('')
@@ -27,7 +27,8 @@ const LoginForm = () => {
 	const { enqueueSnackbar } = useSnackbar()
 
 	const handleSubmit = async () => {
-		if (!email.trim() || !password) {
+		const trimmedEmail = email.trim()
+		if (!trimmedEmail || !password) {
 			enqueueSnackbar('Введите email и пароль!', { variant: 'warning' })
 			return
 		}
@@ -35,26 +36,26 @@ const LoginForm = () => {
 		setLoading(true)
 
 		try {
-			const data = await login(email.trim(), password, rememberMe)
-
+			const { access_token, role } = await login(
+				trimmedEmail,
+				password,
+				rememberMe
+			)
 			enqueueSnackbar('🎉 Успешный вход!', { variant: 'success' })
-
-			authLogin(data.refresh_token)
-
-			setTimeout(() => navigate('/dashboard'), 1000)
-		} catch (error) {
+			authLogin(access_token, role)
+			navigate('/dashboard')
+		} catch (error: any) {
 			enqueueSnackbar(
-				error.message || 'Ошибка: неправильный email или пароль!',
-				{
-					variant: 'error',
-				}
+				error?.response?.data?.message ||
+					'Ошибка: неправильный email или пароль!',
+				{ variant: 'error' }
 			)
 		} finally {
 			setLoading(false)
 		}
 	}
 
-	const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === 'Enter') handleSubmit()
 	}
 
@@ -65,18 +66,14 @@ const LoginForm = () => {
 			exit={{ opacity: 0, y: -20 }}
 			transition={{ duration: 0.5 }}
 		>
-			<Box sx={{ width: '100%', maxWidth: 400, mx: 'auto' }}>
-				<Typography
-					fontWeight='bold'
-					fontSize={26}
-					mb={2}
-					textAlign='center'
-					color='#333'
-				>
-					Добро пожаловать
+			<Box
+				sx={{ width: '100%', maxWidth: 400, mx: 'auto', textAlign: 'center' }}
+			>
+				<Typography fontWeight='bold' fontSize={28} mb={2} color='#6A5ACD'>
+					Добро пожаловать 👋
 				</Typography>
-				<Typography color='#555' fontSize={18} mb={3} textAlign='center'>
-					Введите свои данные для входа
+				<Typography color='#666' fontSize={16} mb={3}>
+					Введите свои данные для входа в систему
 				</Typography>
 
 				<TextField
@@ -85,17 +82,11 @@ const LoginForm = () => {
 					margin='normal'
 					value={email}
 					onChange={e => setEmail(e.target.value)}
-					onKeyPress={handleKeyPress}
+					onKeyDown={handleKeyDown}
 					variant='outlined'
 					sx={{
-						backgroundColor: '#fff',
-						input: { color: '#333' },
-						'& label': { color: '#777' },
-						'& .MuiOutlinedInput-root': {
-							'& fieldset': { borderColor: '#aaa' },
-							'&:hover fieldset': { borderColor: '#6A5ACD' },
-							'&.Mui-focused fieldset': { borderColor: '#6A5ACD' },
-						},
+						'& fieldset': { borderColor: '#A0A0A0' },
+						input: { color: '#333' }, // Цвет текста
 					}}
 				/>
 
@@ -106,17 +97,11 @@ const LoginForm = () => {
 					margin='normal'
 					value={password}
 					onChange={e => setPassword(e.target.value)}
-					onKeyPress={handleKeyPress}
+					onKeyDown={handleKeyDown}
 					variant='outlined'
 					sx={{
-						backgroundColor: '#fff',
-						input: { color: '#333' },
-						'& label': { color: '#777' },
-						'& .MuiOutlinedInput-root': {
-							'& fieldset': { borderColor: '#aaa' },
-							'&:hover fieldset': { borderColor: '#6A5ACD' },
-							'&.Mui-focused fieldset': { borderColor: '#6A5ACD' },
-						},
+						'& fieldset': { borderColor: '#A0A0A0' },
+						input: { color: '#333' }, // Цвет текста пароля
 					}}
 					InputProps={{
 						endAdornment: (
@@ -124,7 +109,7 @@ const LoginForm = () => {
 								<IconButton
 									onClick={() => setShowPassword(!showPassword)}
 									edge='end'
-									sx={{ color: '#6A5ACD' }} // ✅ Делаем глазик видимым
+									sx={{ color: '#6A5ACD' }}
 								>
 									{showPassword ? <VisibilityOff /> : <Visibility />}
 								</IconButton>
@@ -133,17 +118,26 @@ const LoginForm = () => {
 					}}
 				/>
 
-				<Box display='flex' alignItems='center' mt={1}>
-					<Checkbox
-						checked={rememberMe}
-						onChange={e => setRememberMe(e.target.checked)}
-						sx={{ color: '#6A5ACD' }}
-					/>
-					<Typography color='#333'>Запомнить меня</Typography>
-					<Box sx={{ flexGrow: 1 }} />
-					<Typography color='primary' sx={{ cursor: 'pointer', fontSize: 14 }}>
+				<Box
+					display='flex'
+					alignItems='center'
+					justifyContent='space-between'
+					mt={1}
+				>
+					<Box display='flex' alignItems='center'>
+						<Checkbox
+							checked={rememberMe}
+							onChange={e => setRememberMe(e.target.checked)}
+						/>
+						<Typography color='#333'>Запомнить меня</Typography>
+					</Box>
+
+					<Link
+						to='/forgot-password'
+						style={{ textDecoration: 'none', color: '#6A5ACD' }}
+					>
 						Забыли пароль?
-					</Typography>
+					</Link>
 				</Box>
 
 				<Button
@@ -151,12 +145,12 @@ const LoginForm = () => {
 					fullWidth
 					sx={{
 						mt: 3,
-						backgroundColor: '#6A5ACD',
-						'&:hover': { backgroundColor: '#5a4bcf' },
-						fontWeight: 'bold',
-						fontSize: 16,
-						py: 1.5,
-						boxShadow: '0px 5px 15px rgba(106, 90, 205, 0.4)', // ✅ Тень для кнопки
+						background: 'linear-gradient(90deg, #6A5ACD, #836FFF)',
+						color: '#fff',
+						borderRadius: '8px',
+						'&:hover': {
+							background: 'linear-gradient(90deg, #5A4ACD, #726EFF)',
+						},
 					}}
 					onClick={handleSubmit}
 					disabled={loading}

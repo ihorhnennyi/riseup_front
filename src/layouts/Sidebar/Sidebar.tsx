@@ -1,4 +1,6 @@
 import { logout } from '@api/authApi'
+import { useAuth } from '@context/AuthContext'
+import { useThemeContext } from '@context/ThemeContext'
 import {
 	BarChart,
 	DarkMode,
@@ -20,14 +22,8 @@ import {
 	ListItemText,
 	Typography,
 } from '@mui/material'
-import { Link } from 'react-router-dom'
-import { useThemeContext } from '../../context/ThemeContext'
-
-interface SidebarProps {
-	role: 'admin' | 'user'
-	collapsed: boolean
-	setCollapsed: (value: boolean) => void
-}
+import { useEffect, useMemo } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 const menuItems = {
 	admin: [
@@ -43,42 +39,60 @@ const menuItems = {
 	],
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role, collapsed, setCollapsed }) => {
+const Sidebar: React.FC<{
+	collapsed: boolean
+	setCollapsed: (value: boolean) => void
+}> = ({ collapsed, setCollapsed }) => {
 	const { toggleTheme, isDarkMode } = useThemeContext()
-	const sidebarWidth = collapsed ? 80 : 240
+	const navigate = useNavigate()
+	const location = useLocation()
+
+	const auth = useAuth()
+
+	useEffect(() => {
+		if (auth) {
+			setCollapsed(false) // Принудительно раскрываем меню при логине
+		}
+	}, [auth])
+
+	if (!auth) return null
+
+	const { role } = auth
+	const menu = useMemo(() => menuItems[role] || [], [role])
 
 	const handleLogout = async () => {
 		await logout()
+		navigate('/login')
 	}
 
 	return (
 		<Drawer
 			variant='permanent'
 			sx={{
-				width: sidebarWidth,
+				width: collapsed ? 80 : 240,
 				flexShrink: 0,
-				overflow: 'hidden',
 				height: '100vh',
 				transition: 'width 0.3s ease-in-out',
 				'& .MuiDrawer-paper': {
-					width: sidebarWidth,
-					boxSizing: 'border-box',
+					width: collapsed ? 80 : 240,
+					height: '100vh',
+					transition: 'width 0.3s ease-in-out',
 					display: 'flex',
 					flexDirection: 'column',
-					height: '100vh',
-					overflow: 'hidden',
+					justifyContent: 'space-between',
 					alignItems: collapsed ? 'center' : 'flex-start',
-					transition: 'width 0.3s ease-in-out',
+					paddingY: 2,
 				},
 			}}
 		>
+			{/* Верхняя часть */}
 			<Box
 				sx={{
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: collapsed ? 'center' : 'space-between',
-					p: 2,
 					width: '100%',
+					p: 2,
 				}}
 			>
 				{!collapsed && <Typography variant='h6'>RiseUp</Typography>}
@@ -87,51 +101,84 @@ const Sidebar: React.FC<SidebarProps> = ({ role, collapsed, setCollapsed }) => {
 				</IconButton>
 			</Box>
 
-			<Box sx={{ flexGrow: 1, width: '100%' }}>
-				<List>
-					{menuItems[role].map(({ text, icon, path }) => (
-						<ListItemButton
-							key={text}
-							component={Link}
-							to={path}
+			<List sx={{ flexGrow: 1, width: '100%' }}>
+				{menu.map(({ text, icon, path }) => (
+					<ListItemButton
+						key={text}
+						component={Link}
+						to={path}
+						sx={{
+							width: '100%', // ✅ Ссылка на всю ширину
+							justifyContent: collapsed ? 'center' : 'flex-start',
+							px: 2,
+							transition: 'background 0.2s ease-in-out',
+							'&:hover': {
+								backgroundColor: 'rgba(0, 0, 0, 0.1)',
+							},
+							backgroundColor:
+								location.pathname === path ? 'rgba(0, 0, 0, 0.15)' : 'inherit',
+						}}
+					>
+						<ListItemIcon
 							sx={{
-								justifyContent: collapsed ? 'center' : 'flex-start',
-								px: 2,
-								width: '100%',
-								transition: 'padding 0.3s ease-in-out',
+								justifyContent: 'center',
+								minWidth: collapsed ? 'unset' : 56,
 							}}
 						>
-							<ListItemIcon sx={{ minWidth: 40, justifyContent: 'center' }}>
-								{icon}
-							</ListItemIcon>
-							{!collapsed && <ListItemText primary={text} sx={{ ml: 2 }} />}
-						</ListItemButton>
-					))}
-				</List>
-			</Box>
+							{icon}
+						</ListItemIcon>
+						{!collapsed && <ListItemText primary={text} />}
+					</ListItemButton>
+				))}
+			</List>
 
+			{/* Нижняя часть */}
 			<Box sx={{ width: '100%' }}>
 				<Divider />
-				<List sx={{ display: 'flex', flexDirection: 'column', pb: 2 }}>
+
+				<List sx={{ width: '100%' }}>
 					<ListItemButton
 						onClick={toggleTheme}
 						sx={{
+							width: '100%', // ✅ Кнопка на всю ширину
 							justifyContent: collapsed ? 'center' : 'flex-start',
-							px: 2,
-							width: '100%',
+							transition: 'background 0.2s ease-in-out',
+							'&:hover': {
+								backgroundColor: 'rgba(0, 0, 0, 0.1)',
+							},
 						}}
 					>
-						<ListItemIcon sx={{ minWidth: 40, justifyContent: 'center' }}>
+						<ListItemIcon
+							sx={{
+								justifyContent: 'center',
+								minWidth: collapsed ? 'unset' : 56,
+							}}
+						>
 							{isDarkMode ? <LightMode /> : <DarkMode />}
 						</ListItemIcon>
-						{!collapsed && <ListItemText primary='Тема' sx={{ ml: 2 }} />}
+						{!collapsed && <ListItemText primary='Тема' />}
 					</ListItemButton>
 
-					<ListItemButton onClick={handleLogout}>
-						<ListItemIcon sx={{ minWidth: 40, justifyContent: 'center' }}>
+					<ListItemButton
+						onClick={handleLogout}
+						sx={{
+							width: '100%', // ✅ Кнопка на всю ширину
+							justifyContent: collapsed ? 'center' : 'flex-start',
+							transition: 'background 0.2s ease-in-out',
+							'&:hover': {
+								backgroundColor: 'rgba(0, 0, 0, 0.1)',
+							},
+						}}
+					>
+						<ListItemIcon
+							sx={{
+								justifyContent: 'center',
+								minWidth: collapsed ? 'unset' : 56,
+							}}
+						>
 							<ExitToApp />
 						</ListItemIcon>
-						{!collapsed && <ListItemText primary='Выход' sx={{ ml: 2 }} />}
+						{!collapsed && <ListItemText primary='Выход' />}
 					</ListItemButton>
 				</List>
 			</Box>

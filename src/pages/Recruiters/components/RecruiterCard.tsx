@@ -7,58 +7,58 @@ import {
 	CardContent,
 	IconButton,
 	Typography,
+	useTheme,
 } from '@mui/material'
-import {
-	FaEnvelope,
-	FaPhone,
-	FaTelegram,
-	FaViber,
-	FaWhatsapp,
-} from 'react-icons/fa'
+import { FaFacebook, FaTelegram, FaViber, FaWhatsapp } from 'react-icons/fa'
 
 interface RecruiterCardProps {
-	firstName: string
-	lastName: string
-	middleName?: string
+	name: string
+	surname: string
 	photo?: string | null
-	role: string
-	isActive: boolean
 	email: string
 	phone: string
 	telegram?: string
 	whatsapp?: string
 	viber?: string
-	branchName?: string
+	facebook?: string
+	role: string
+	branch?: string
+	isActive: boolean
 	onEdit?: () => void
 }
 
 const RecruiterCard: React.FC<RecruiterCardProps> = ({
-	firstName,
-	lastName,
-	middleName,
+	name,
+	surname,
 	photo,
-	role,
-	isActive,
 	email,
 	phone,
 	telegram,
 	whatsapp,
 	viber,
-	branchName,
+	facebook,
+	role,
+	branch,
+	isActive,
 	onEdit,
 }) => {
+	const theme = useTheme()
+	const isDarkMode = theme.palette.mode === 'dark'
+
 	return (
 		<Card
 			sx={{
-				p: 3,
+				p: 1,
 				display: 'flex',
 				flexDirection: 'column',
 				alignItems: 'center',
 				position: 'relative',
-				maxWidth: 450, // Увеличил ширину карточки
-				boxShadow: 5,
+				maxWidth: 400,
+				boxShadow: 3,
 				borderRadius: 3,
-				backgroundColor: '#1E1E2D',
+				backgroundColor: isDarkMode ? '#1E1E2D' : '#fff',
+				color: isDarkMode ? 'white' : 'black',
+				textAlign: 'center',
 			}}
 		>
 			{/* Кнопка редактирования */}
@@ -66,89 +66,94 @@ const RecruiterCard: React.FC<RecruiterCardProps> = ({
 				onClick={onEdit}
 				sx={{
 					position: 'absolute',
-					top: 15,
-					zIndex: 10,
-					right: 15,
+					top: 10,
+					right: 10,
 					backgroundColor: 'rgba(255, 255, 255, 0.2)',
-					color: 'white',
+					color: isDarkMode ? 'white' : 'black',
 					'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.4)' },
 				}}
 			>
 				<EditIcon />
 			</IconButton>
 
-			{/* Верхний баннер */}
-			<Box
-				sx={{
-					width: '100%',
-					height: 140,
-					background: 'linear-gradient(45deg, #6A5ACD, #3A86FF)',
-					borderRadius: '10px 10px 0 0',
-					position: 'relative',
-				}}
-			/>
-
 			{/* Аватар */}
 			<Avatar
-				src={photo || ''}
-				sx={{
-					width: 100,
-					height: 100,
-					border: '4px solid white',
-					mt: '-50px',
-					backgroundColor: 'gray',
-				}}
+				src={photo || '/default-avatar.png'}
+				sx={{ width: 80, height: 80, backgroundColor: 'gray', mt: 1 }}
 			/>
 
 			{/* Контент */}
 			<CardContent sx={{ textAlign: 'center', width: '100%' }}>
-				<Typography variant='h5' fontWeight='bold' color='#fff'>
-					{firstName} {lastName}
+				{/* Имя и фамилия */}
+				<Typography
+					variant='h6'
+					fontWeight='bold'
+					sx={{
+						wordBreak: 'break-word',
+						whiteSpace: 'normal',
+						color: isDarkMode ? 'white' : 'black',
+					}}
+				>
+					{name} {surname}
 				</Typography>
-				{middleName && (
-					<Typography variant='body2' color='#aaa'>
-						{middleName}
-					</Typography>
-				)}
+
 				<Typography
 					variant='caption'
-					sx={{ mt: 1, display: 'block', color: '#bbb' }}
+					sx={{ mt: 1, display: 'block', color: isDarkMode ? '#bbb' : '#666' }}
 				>
-					{role === 'user' ? 'Рекрутер' : role}
+					Роль: {role}
 				</Typography>
 
 				{/* Статус */}
 				<Button
 					variant='contained'
 					size='small'
-					sx={{ mt: 1, backgroundColor: isActive ? 'green' : 'gray' }}
+					sx={{
+						mt: 1,
+						backgroundColor: isActive ? 'green' : 'gray',
+						color: 'white',
+					}}
 				>
 					{isActive ? 'Активен' : 'Неактивен'}
 				</Button>
 
-				{/* Соцсети (иконки без текста) */}
-				<Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 3 }}>
-					{email && (
-						<a
-							href={`mailto:${email}`}
-							target='_blank'
-							rel='noopener noreferrer'
-						>
-							<FaEnvelope size={24} color='#d44638' />
-						</a>
-					)}
-					{phone && (
-						<a href={`tel:${phone}`} target='_blank' rel='noopener noreferrer'>
-							<FaPhone size={24} color='#34B7F1' />
-						</a>
-					)}
+				{/* Разделитель */}
+				<Box sx={{ borderBottom: '1px solid #444', width: '100%', my: 1 }} />
+
+				{/* Контакты */}
+				<Typography variant='body1' fontWeight='bold'>
+					Контакты
+				</Typography>
+				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
+					<Typography
+						variant='body2'
+						sx={{
+							color: isDarkMode ? '#ddd' : '#444',
+							wordBreak: 'break-word',
+						}}
+					>
+						Телефон: {phone}
+					</Typography>
+					<Typography
+						variant='body2'
+						sx={{
+							color: isDarkMode ? '#ddd' : '#444',
+							wordBreak: 'break-word',
+						}}
+					>
+						Email: {email}
+					</Typography>
+				</Box>
+
+				{/* Соцсети */}
+				<Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 1 }}>
 					{telegram && (
 						<a
 							href={`https://t.me/${telegram}`}
 							target='_blank'
 							rel='noopener noreferrer'
 						>
-							<FaTelegram size={24} color='#0088cc' />
+							<FaTelegram size={20} color='#0088cc' />
 						</a>
 					)}
 					{whatsapp && (
@@ -157,7 +162,7 @@ const RecruiterCard: React.FC<RecruiterCardProps> = ({
 							target='_blank'
 							rel='noopener noreferrer'
 						>
-							<FaWhatsapp size={24} color='#25D366' />
+							<FaWhatsapp size={20} color='#25D366' />
 						</a>
 					)}
 					{viber && (
@@ -166,17 +171,32 @@ const RecruiterCard: React.FC<RecruiterCardProps> = ({
 							target='_blank'
 							rel='noopener noreferrer'
 						>
-							<FaViber size={24} color='#7360F2' />
+							<FaViber size={20} color='#7360F2' />
+						</a>
+					)}
+					{facebook && (
+						<a
+							href={`https://facebook.com/${facebook}`}
+							target='_blank'
+							rel='noopener noreferrer'
+						>
+							<FaFacebook size={20} color='#1877F2' />
 						</a>
 					)}
 				</Box>
 
-				{/* Филиал */}
+				{/* Разделитель */}
+				<Box sx={{ borderBottom: '1px solid #444', width: '100%', my: 1 }} />
+
+				{/* Дополнительная информация */}
+				<Typography variant='body1' fontWeight='bold'>
+					Доп. информация
+				</Typography>
 				<Typography
 					variant='body2'
-					sx={{ mt: 2, fontWeight: 'bold', color: '#ccc' }}
+					sx={{ color: isDarkMode ? '#ddd' : '#444' }}
 				>
-					Филиал: {branchName || 'Не указан'}
+					Филиал: {branch || 'Не указан'}
 				</Typography>
 			</CardContent>
 		</Card>

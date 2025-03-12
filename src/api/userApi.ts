@@ -1,32 +1,32 @@
-import api, { getAuthHeaders } from './apiClient'
+import api from './apiClient'
 
+// 🔹 Получение списка пользователей
 export const fetchUsers = async () => {
-	const headers = await getAuthHeaders()
-	const response = await api.get('/users', { headers, withCredentials: true })
+	const response = await api.get('/users', { withCredentials: true })
 	return response.data
 }
 
 export const fetchUserById = async (id: string) => {
-	const headers = await getAuthHeaders()
-	const response = await api.get(`/users/${id}`, {
-		headers,
-		withCredentials: true,
-	})
+	const response = await api.get(`/users/${id}`, { withCredentials: true })
 	return response.data
 }
 
 export const createUser = async (userData: FormData) => {
-	const headers = await getAuthHeaders()
-	return api.post('/users', userData, {
-		headers, // НЕ передаем 'Content-Type'
-		withCredentials: true,
-	})
+	return api.post('/users', userData, { withCredentials: true })
+}
+
+export const updateUser = async (id: string, userData: FormData) => {
+	return api.put(`/users/${id}`, userData, { withCredentials: true })
 }
 
 export const deleteUser = async (id: string) => {
-	const headers = await getAuthHeaders()
-	const response = await api.delete(`/users/${id}`, {
-		headers,
+	const response = await api.delete(`/users/${id}`, { withCredentials: true })
+	return response.data
+}
+
+// 🔹 Получение лидов по рекрутеру (убрали getAuthHeaders)
+export const fetchLeadsByRecruiter = async (recruiterId: string) => {
+	const response = await api.get(`/users/${recruiterId}/leads`, {
 		withCredentials: true,
 	})
 	return response.data

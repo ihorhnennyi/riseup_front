@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material'
-import LoginForm from './components/LoginForm'
+import LoginForm from './components/LoginForm' // ✅ Импортируем LoginForm
 
 const LoginPage = () => {
 	return (
@@ -23,10 +23,9 @@ const LoginPage = () => {
 					justifyContent: 'center',
 					alignItems: 'center',
 					boxShadow: 3,
-					borderRadius: '0 10px 10px 0',
 				}}
 			>
-				<LoginForm />
+				<LoginForm /> {/* ✅ Используем форму логина */}
 			</Box>
 
 			{/* Правая часть с графикой */}

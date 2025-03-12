@@ -1,25 +1,28 @@
 import { CssBaseline } from '@mui/material'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { SnackbarProvider } from 'notistack' // ✅ Добавляем notistack
+import { SnackbarProvider } from 'notistack'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { RouterProvider } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom' // ✅ Используем только BrowserRouter
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProviderWrapper } from './context/ThemeContext'
 import './index.css'
-import { router } from './routes/routes'
+import AppRoutes from './routes/AppRoutes' // ✅ Импортируем маршруты в виде компонента
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
 	<React.StrictMode>
-		<LocalizationProvider dateAdapter={AdapterDayjs}>
-			<ThemeProviderWrapper>
-				<CssBaseline /> {/* Добавляем глобальный сброс стилей */}
-				<AuthProvider>
-					<SnackbarProvider maxSnack={3} autoHideDuration={3000}>
-						<RouterProvider router={router} />
-					</SnackbarProvider>
-				</AuthProvider>
-			</ThemeProviderWrapper>
-		</LocalizationProvider>
+		<BrowserRouter>
+			<AuthProvider>
+				<LocalizationProvider dateAdapter={AdapterDayjs}>
+					<ThemeProviderWrapper>
+						<CssBaseline />
+						<SnackbarProvider maxSnack={3} autoHideDuration={3000}>
+							<AppRoutes /> {/* ✅ Используем компонент с маршрутами */}
+						</SnackbarProvider>
+					</ThemeProviderWrapper>
+				</LocalizationProvider>
+			</AuthProvider>
+		</BrowserRouter>
 	</React.StrictMode>
 )

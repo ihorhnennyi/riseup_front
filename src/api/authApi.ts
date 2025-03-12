@@ -1,19 +1,39 @@
-import api, { getAuthHeaders } from './apiClient'
+import { jwtDecode } from 'jwt-decode'
+import api from './apiClient'
 
-// 🔹 Вход
+// 🔹 Функция для получения CSRF-токена перед запросами
+export const fetchCsrfToken = async (): Promise<void> => {
+	try {
+		const response = await api.get('/auth/csrf-token', {
+			withCredentials: true,
+		})
+		console.log('✅ CSRF-токен получен:', response.data)
+	} catch (error) {
+		console.error('❌ Ошибка получения CSRF-токена:', error)
+		throw error
+	}
+}
+
+// 🔹 Функция логина
 export const login = async (
 	email: string,
 	password: string,
 	rememberMe: boolean
 ) => {
 	try {
-		const headers = await getAuthHeaders()
+		// 1. Запрашиваем CSRF-токен перед логином
+		await fetchCsrfToken()
+
+		// 2. Отправляем запрос на логин
 		const response = await api.post(
 			'/auth/login',
 			{ email, password, rememberMe },
-			{ headers, withCredentials: true }
+			{ withCredentials: true }
 		)
-		localStorage.setItem('refresh_token', response.data.refresh_token)
+
+		console.log('✅ Успешный вход:', response.data)
+		localStorage.setItem('access_token', response.data.access_token) // ✅ Сохраняем токен
+
 		return response.data
 	} catch (error) {
 		console.error('❌ Ошибка входа:', error)
@@ -21,21 +41,27 @@ export const login = async (
 	}
 }
 
-// 🔹 Выход
+// 🔹 Функция выхода
 export const logout = async () => {
 	try {
-		const headers = await getAuthHeaders()
-		await api.post('/auth/logout', {}, { headers, withCredentials: true })
-
-		// Очищаем все токены
-		localStorage.removeItem('token')
-		localStorage.removeItem('refresh_token')
-		sessionStorage.clear()
-		document.cookie =
-			'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-
-		window.location.href = '/login'
+		await api.post('/auth/logout', {}, { withCredentials: true })
+		localStorage.removeItem('access_token') // ✅ Очищаем токен
+		console.log('✅ Выход выполнен')
 	} catch (error) {
 		console.error('❌ Ошибка выхода:', error)
+	}
+}
+
+// 🔹 Функция декодирования токена
+export const getUserIdFromToken = (): string | null => {
+	try {
+		const token = localStorage.getItem('access_token') // ✅ Берём токен из localStorage
+		if (!token) return null
+
+		const decoded: any = jwtDecode(token)
+		return decoded?.userId || null
+	} catch (error) {
+		console.error('❌ Ошибка декодирования токена:', error)
+		return null
 	}
 }

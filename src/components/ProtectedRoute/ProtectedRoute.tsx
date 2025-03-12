@@ -5,17 +5,15 @@ import { Navigate, Outlet } from 'react-router-dom'
 
 const ProtectedRoute = () => {
 	const { isAuthenticated } = useAuth()
-	const [validSession, setValidSession] = useState<boolean | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
+	const [validSession, setValidSession] = useState<boolean>(false)
 
 	useEffect(() => {
 		const checkSession = async () => {
 			try {
 				const response = await api.get('/auth/session', {
-					withCredentials: true, // ✅ Это главное условие!
+					withCredentials: true,
 				})
-
-				console.log('✅ Ответ от /auth/session:', response.data)
 				setValidSession(response.data.isAuthenticated)
 			} catch (error) {
 				console.error('❌ Ошибка при проверке сессии:', error)
@@ -29,12 +27,9 @@ const ProtectedRoute = () => {
 	}, [])
 
 	if (isLoading) return <div>Загрузка...</div>
+	if (!isAuthenticated || !validSession) return <Navigate to='/login' replace />
 
-	if (validSession === null) {
-		return <div>Ошибка соединения. Попробуйте позже.</div>
-	}
-
-	return validSession ? <Outlet /> : <Navigate to='/login' replace />
+	return <Outlet />
 }
 
 export default ProtectedRoute
