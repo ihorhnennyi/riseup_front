@@ -8,6 +8,7 @@ import {
 	Settings,
 	Statistics,
 } from '@pages/index'
+import LeadDetails from '@pages/Leads/LeadDetails'
 import RecruiterDetails from '@pages/Recruiters/RecruiterDetails'
 import { createBrowserRouter } from 'react-router-dom'
 
@@ -24,6 +25,10 @@ export const router = createBrowserRouter([
 				children: [
 					{ path: '/dashboard', element: <Dashboard /> },
 					{ path: '/candidates', element: <Leads /> },
+					{
+						path: '/candidates/:id',
+						element: <LeadDetails />,
+					},
 					{ path: '/recruiters', element: <Recruiters /> },
 					{ path: '/recruiters/:id', element: <RecruiterDetails /> },
 					{ path: '/statistics', element: <Statistics /> },

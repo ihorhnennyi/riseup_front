@@ -8,7 +8,7 @@ import {
 	TableHead,
 	TableRow,
 } from '@mui/material'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface TableWrapperProps {
 	columns: string[]
@@ -22,13 +22,30 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
 	onRowClick,
 }) => {
 	const containerRef = useRef<HTMLDivElement | null>(null)
+	const [tableHeight, setTableHeight] = useState<number | 'auto'>('auto')
+
+	// Функция расчета высоты таблицы
+	const updateTableHeight = () => {
+		if (containerRef.current) {
+			const boundingRect = containerRef.current.getBoundingClientRect()
+			const availableHeight = window.innerHeight - boundingRect.top - 20 // Оставляем небольшой отступ
+			setTableHeight(availableHeight)
+		}
+	}
+
+	// Обновляем высоту при изменении размера окна
+	useEffect(() => {
+		updateTableHeight()
+		window.addEventListener('resize', updateTableHeight)
+		return () => window.removeEventListener('resize', updateTableHeight)
+	}, [])
 
 	return (
 		<Box
 			sx={{
-				width: '100%', // ✅ Контейнер теперь адаптивный
-				overflowX: 'auto', // ✅ Если таблица больше контейнера, появляется скролл внутри
-				maxWidth: '100%', // ✅ Таблица не выходит за границы родительского контейнера
+				width: '100%',
+				overflowX: 'auto',
+				maxWidth: '100%',
 			}}
 		>
 			<TableContainer
@@ -36,11 +53,11 @@ const TableWrapper: React.FC<TableWrapperProps> = ({
 				ref={containerRef}
 				sx={{
 					boxShadow: 3,
-					borderRadius: '12px',
 					overflowX: 'auto',
 					overflowY: 'auto',
 					backgroundColor: theme => theme.palette.background.paper,
-					maxWidth: '100%', // ✅ Теперь таблица не выходит за границы Layout
+					maxWidth: '100%',
+					maxHeight: tableHeight, // ✅ Динамическая высота
 				}}
 			>
 				<Table stickyHeader sx={{ minWidth: '100%', tableLayout: 'auto' }}>

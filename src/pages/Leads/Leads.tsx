@@ -8,6 +8,11 @@ import LeadsTable from './components/LeadsTable'
 const Leads = () => {
 	const [search, setSearch] = useState('')
 	const [openRabotaModal, setOpenRabotaModal] = useState(false)
+	const [reload, setReload] = useState(false) // 🔥 Триггер для обновления таблицы
+
+	const handleLeadAdded = () => {
+		setReload(prev => !prev) // 🔄 Триггер обновления списка лидов
+	}
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -15,7 +20,6 @@ const Leads = () => {
 				title='Лиды'
 				description='Управляйте списком лидов и следите за их статусом'
 			/>
-
 			<Box
 				sx={{
 					display: 'flex',
@@ -36,13 +40,14 @@ const Leads = () => {
 				<Box
 					sx={{
 						display: 'flex',
-						flexDirection: { xs: 'column', md: 'row' }, // На мобилках в колонку, на ПК в ряд
+						flexDirection: { xs: 'column', md: 'row' },
 						gap: 2,
 						width: '100%',
 						justifyContent: 'flex-end',
 					}}
 				>
-					<AddLeadModal />
+					<AddLeadModal onLeadAdded={handleLeadAdded} />{' '}
+					{/* ✅ Передаём коллбек */}
 					<Button
 						variant='contained'
 						color='secondary'
@@ -52,9 +57,7 @@ const Leads = () => {
 					</Button>
 				</Box>
 			</Box>
-
-			<LeadsTable />
-
+			<LeadsTable reload={reload} /> {/* 🔥 Передаём триггер обновления */}
 			<AddLeadFromRabotaModal
 				open={openRabotaModal}
 				onClose={() => setOpenRabotaModal(false)}
