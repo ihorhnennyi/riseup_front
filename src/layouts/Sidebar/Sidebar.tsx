@@ -33,7 +33,7 @@ const menuItems = {
 		{ text: 'Статистика', icon: <BarChart />, path: '/statistics' },
 		{ text: 'Настройки', icon: <Settings />, path: '/settings' },
 	],
-	user: [
+	recruiter: [
 		{ text: 'Дашборд', icon: <Dashboard />, path: '/' },
 		{ text: 'Кандидаты', icon: <People />, path: '/candidates' },
 	],

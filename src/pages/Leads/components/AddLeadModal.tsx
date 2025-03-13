@@ -1,4 +1,4 @@
-import { getUserIdFromToken } from '@api/authApi'
+import { getUserSession } from '@api/authApi'
 import { createLead } from '@api/leadsApi'
 import { fetchStatuses } from '@api/statusApi'
 import { ModalWrapper } from '@components/index'
@@ -24,9 +24,6 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
-	const accessToken = localStorage.getItem('access_token') || ''
-	const recruiterId = getUserIdFromToken()
-
 	const [formData, setFormData] = useState({
 		name: '',
 		surname: '',
@@ -44,6 +41,7 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 		notes: '',
 		statusId: '',
 		statusEndDate: '',
+		recruiterId: '', // ✅ Добавил recruiterId в formData
 	})
 
 	useEffect(() => {
@@ -57,19 +55,24 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (file) {
-			console.log('📸 Загруженный файл:', file)
-			console.log('📌 Название:', file.name)
-			console.log('📌 Тип:', file.type)
-			console.log('📌 Размер:', file.size)
 			setFormData(prev => ({ ...prev, photo: file }))
-		} else {
-			console.error('❌ Ошибка загрузки фото')
 		}
 	}
 
+	const [recruiterId, setRecruiterId] = useState<string | null>(null)
+
 	useEffect(() => {
-		console.log('✅ Фото в formData обновилось:', formData.photo)
-	}, [formData.photo])
+		const fetchSession = async () => {
+			const userSession = await getUserSession()
+			if (userSession && userSession._id) {
+				setRecruiterId(userSession._id)
+				setFormData(prev => ({ ...prev, recruiterId: userSession._id })) // ✅ Добавил в formData
+			} else {
+				console.error('❌ Ошибка: recruiterId отсутствует!')
+			}
+		}
+		fetchSession()
+	}, [])
 
 	const handleSubmit = async () => {
 		setLoading(true)
@@ -81,48 +84,34 @@ const AddCandidateModal = ({ onLeadAdded }) => {
 			return
 		}
 
-		try {
-			// Формируем данные формы для отправки
-			const formDataToSend = new FormData()
-			console.log('ID текущего рекрутера:', recruiterId)
-			// Добавляем данные лида
-			formDataToSend.append(
-				'leadData',
-				JSON.stringify({
-					name: formData.name?.trim() || '',
-					surname: formData.surname?.trim() || '',
-					middleName: formData.middleName?.trim() || '',
-					email: formData.email?.trim() || '',
-					phone: formData.phone?.trim() || '',
-					age: formData.age ? Number(formData.age) : 0,
-					telegram: formData.telegram?.trim() || '',
-					salaryExpectation: formData.salaryExpectation?.trim() || '',
-					relocation: !!formData.relocation,
-					remoteWork: !!formData.remoteWork,
-					workSchedule: Array.isArray(formData.workSchedule)
-						? formData.workSchedule
-						: [],
-					portfolio: Array.isArray(formData.portfolio)
-						? formData.portfolio
-						: [],
-					notes: formData.notes?.trim() || '',
-					statusId: formData.statusId?.trim() || null,
-					statusEndDate: formData.statusEndDate
-						? new Date(formData.statusEndDate).toISOString()
-						: undefined,
-					recruiterId,
-				})
-			)
+		if (!recruiterId) {
+			console.error('❌ Ошибка: recruiterId отсутствует!')
+			setError('Ошибка: Не удалось определить рекрутера.')
+			setLoading(false)
+			return
+		}
 
-			// Если фото присутствует, добавляем его в форму
+		try {
+			// Преобразуем `statusId` и `recruiterId` в ObjectId-подобные строки
+			const formattedData = {
+				...formData,
+				recruiter: recruiterId, // ✅ Исправляем на `recruiter`
+				statusId: formData.statusId?.trim() || undefined, // ❌ Если пусто - убираем
+			}
+
+			const formDataToSend = new FormData()
+			formDataToSend.append('leadData', JSON.stringify(formattedData))
+
 			if (formData.photo) {
 				formDataToSend.append('photo', formData.photo)
 			}
 
-			// Отправляем форму с данными на сервер
-			await createLead(formDataToSend)
+			console.log(
+				'📦 Отправляемые данные:',
+				JSON.stringify(formattedData, null, 2)
+			)
 
-			// Логируем весь FormData для отладки
+			await createLead(formDataToSend)
 
 			setOpen(false)
 			onLeadAdded()

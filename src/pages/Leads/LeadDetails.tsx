@@ -1,4 +1,5 @@
 import { fetchLeadById } from '@api/leadsApi'
+import { fetchStatuses } from '@api/statusApi'
 import {
 	Avatar,
 	Box,
@@ -9,21 +10,18 @@ import {
 	Paper,
 	Typography,
 } from '@mui/material'
-import { motion } from 'framer-motion' // Импортируем motion
+import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-
-import { fetchStatuses } from '@api/statusApi'
 import EditCandidateModal from './components/EditCandidateModal'
 
 const LeadDetails = () => {
 	const { id } = useParams()
-	const navigate = useNavigate() // Используем navigate для навигации назад
+	const navigate = useNavigate()
 	const [lead, setLead] = useState<any>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [editModalOpen, setEditModalOpen] = useState(false)
-
 	const [statuses, setStatuses] = useState([])
 
 	useEffect(() => {
@@ -35,13 +33,26 @@ const LeadDetails = () => {
 			}
 
 			try {
-				const leadData = await fetchLeadById(id)
-				setLead(leadData)
-
-				// ✅ Загружаем статусы
+				// ✅ Загружаем статусы перед лидом
 				const statusesData = await fetchStatuses()
 				setStatuses(statusesData)
+				console.log('📌 Статусы обновлены:', statusesData)
+
+				// ✅ Загружаем лида
+				const leadData = await fetchLeadById(id)
+				console.log('📌 Полученные данные лида:', leadData)
+
+				// ✅ Приводим статус лида в правильный формат
+				const leadStatusId = leadData?.statusId?._id || leadData?.statusId
+				const leadStatus = statusesData.find(s => s._id === leadStatusId)
+
+				// ✅ Обновляем состояние лида
+				setLead({
+					...leadData,
+					statusId: leadStatus ? leadStatus._id : null,
+				})
 			} catch (err) {
+				console.error('Ошибка загрузки лида:', err)
 				setError('Unable to fetch lead data')
 			} finally {
 				setLoading(false)
@@ -50,29 +61,29 @@ const LeadDetails = () => {
 
 		loadLead()
 	}, [id])
+
 	if (loading) return <div>Загрузка...</div>
 	if (error) return <div style={{ color: 'red' }}>{error}</div>
 
 	return (
 		<motion.div
-			initial={{ opacity: 0 }} // Начальное состояние (невидимый)
-			animate={{ opacity: 1 }} // Конечное состояние (видимый)
-			exit={{ opacity: 0 }} // При выходе (можно добавить анимацию для выхода)
-			transition={{ duration: 0.5 }} // Продолжительность анимации
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			exit={{ opacity: 0 }}
+			transition={{ duration: 0.5 }}
 		>
 			<Container maxWidth='lg' sx={{ mt: 2 }}>
 				<Paper sx={{ padding: 3 }}>
-					{/* Кнопка Назад */}
 					<Button
 						variant='outlined'
 						color='primary'
-						onClick={() => navigate(-1)} // Переход на предыдущую страницу
+						onClick={() => navigate(-1)}
 						sx={{ mb: 2 }}
 					>
 						Назад
 					</Button>
 
-					{/* Header with Avatar, Name, Email */}
+					{/* Header */}
 					<Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
 						<Avatar
 							alt={lead?.name}
@@ -111,8 +122,8 @@ const LeadDetails = () => {
 							<Typography variant='body1'>
 								Статус:{' '}
 								{lead?.statusId && statuses.length
-									? statuses.find(s => s._id === lead.statusId)?.name ||
-									  'Без статуса'
+									? statuses.find(s => String(s._id) === String(lead.statusId))
+											?.name || 'Без статуса'
 									: 'Загрузка статуса...'}
 							</Typography>
 						</Grid>
@@ -169,13 +180,17 @@ const LeadDetails = () => {
 							<EditCandidateModal
 								leadId={lead._id}
 								onClose={() => setEditModalOpen(false)}
-								onLeadUpdated={updatedLead => {
+								onLeadUpdated={async updatedLead => {
 									setLead(prev => ({
 										...prev,
-										...updatedLead, // ✅ Обновляем данные сразу
+										...updatedLead,
 										statusId:
 											updatedLead.statusId?._id || updatedLead.statusId || '',
 									}))
+
+									// 🔄 Перезапрашиваем статусы после обновления
+									const statusesData = await fetchStatuses()
+									setStatuses(statusesData)
 								}}
 							/>
 						)}

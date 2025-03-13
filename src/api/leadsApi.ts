@@ -20,6 +20,8 @@ export const createLead = async (leadData: FormData) => {
 }
 
 export const updateLead = async (id: string, leadData: FormData) => {
+	console.log(`📡 Отправляем PUT запрос: /leads/${id}`)
+
 	return api.put(`/leads/${id}`, leadData, {
 		headers: {
 			'Content-Type': 'multipart/form-data',

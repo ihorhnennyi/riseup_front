@@ -1,3 +1,4 @@
+import { fetchCurrentUser } from '@api/authApi' // Функция для получения текущего пользователя
 import { deleteLead, fetchLeads } from '@api/leadsApi'
 import { TableWrapper } from '@components/index'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -20,25 +21,41 @@ const LeadsTable = ({ reload }: { reload: boolean }) => {
 	const [error, setError] = useState<string | null>(null)
 	const [open, setOpen] = useState(false)
 	const [selectedLead, setSelectedLead] = useState<string | null>(null)
+	const [currentUser, setCurrentUser] = useState<any>(null) // Текущий пользователь
 
 	const navigate = useNavigate()
 
-	// Функция загрузки лидов
-	const loadLeads = async () => {
-		try {
-			const leadsData = await fetchLeads()
-			console.log('Лиды:', leadsData)
-			setLeads(leadsData)
-		} catch (err) {
-			setError('Не удалось загрузить лидов')
-		} finally {
-			setLoading(false)
-		}
-	}
-
-	// Загружаем лидов при маунте и обновлении `reload`
+	// Загружаем текущего пользователя и лидов после него
 	useEffect(() => {
-		loadLeads()
+		const loadData = async () => {
+			try {
+				const userData = await fetchCurrentUser()
+				setCurrentUser(userData)
+				console.log('🔑 Текущий пользователь:', userData)
+
+				const leadsData = await fetchLeads()
+				console.log('📌 Все лиды:', leadsData)
+
+				// ✅ Фильтрация лидов в зависимости от роли
+				if (userData.role === 'recruiter') {
+					const filteredLeads = leadsData.filter(
+						lead => lead.recruiter?._id === userData._id
+					)
+					setLeads(filteredLeads)
+					console.log('🛠 Фильтрованные лиды для рекрутера:', filteredLeads)
+				} else {
+					// Если админ, показываем всех лидов
+					setLeads(leadsData)
+				}
+			} catch (err) {
+				console.error('Ошибка загрузки данных:', err)
+				setError('Не удалось загрузить данные')
+			} finally {
+				setLoading(false)
+			}
+		}
+
+		loadData()
 	}, [reload])
 
 	const handleOpenDeleteModal = (leadId: string) => {
@@ -55,7 +72,8 @@ const LeadsTable = ({ reload }: { reload: boolean }) => {
 		if (!selectedLead) return
 		try {
 			await deleteLead(selectedLead)
-			await loadLeads()
+			const updatedLeads = leads.filter(lead => lead._id !== selectedLead)
+			setLeads(updatedLeads) // Локально обновляем список без перезагрузки
 		} catch (err) {
 			console.error('Ошибка удаления лида:', err)
 		} finally {
@@ -87,7 +105,7 @@ const LeadsTable = ({ reload }: { reload: boolean }) => {
 		lead.phone || '-',
 		lead.telegram || '-',
 		lead.age || '-',
-		lead.status || 'Неизвестный статус',
+		lead.status?.name || 'Неизвестный статус', // Проверяем, есть ли статус
 		new Date(lead.createdAt).toLocaleDateString(),
 		<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
 			<IconButton

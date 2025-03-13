@@ -1,7 +1,6 @@
-import { jwtDecode } from 'jwt-decode'
 import api from './apiClient'
 
-// 🔹 Функция для получения CSRF-токена перед запросами
+// 🔹 Получаем CSRF-токен перед запросами
 export const fetchCsrfToken = async (): Promise<void> => {
 	try {
 		const response = await api.get('/auth/csrf-token', {
@@ -21,19 +20,17 @@ export const login = async (
 	rememberMe: boolean
 ) => {
 	try {
-		// 1. Запрашиваем CSRF-токен перед логином
-		await fetchCsrfToken()
+		await fetchCsrfToken() // ✅ Получаем CSRF-токен перед логином
 
-		// 2. Отправляем запрос на логин
 		const response = await api.post(
 			'/auth/login',
 			{ email, password, rememberMe },
-			{ withCredentials: true }
+			{ withCredentials: true } // ✅ Отправляем куки
 		)
 
-		console.log('✅ Успешный вход:', response.data)
-		localStorage.setItem('access_token', response.data.access_token) // ✅ Сохраняем токен
+		console.log('✅ Успешный вход, куки установлены')
 
+		// ❌ Не сохраняем accessToken в localStorage (он теперь в Cookie)
 		return response.data
 	} catch (error) {
 		console.error('❌ Ошибка входа:', error)
@@ -45,23 +42,36 @@ export const login = async (
 export const logout = async () => {
 	try {
 		await api.post('/auth/logout', {}, { withCredentials: true })
-		localStorage.removeItem('access_token') // ✅ Очищаем токен
 		console.log('✅ Выход выполнен')
 	} catch (error) {
 		console.error('❌ Ошибка выхода:', error)
 	}
 }
 
-// 🔹 Функция декодирования токена
-export const getUserIdFromToken = (): string | null => {
+export const getUserSession = async () => {
 	try {
-		const token = localStorage.getItem('access_token') // ✅ Берём токен из localStorage
-		if (!token) return null
+		const response = await api.get('/auth/session', { withCredentials: true })
+		console.log('✅ API /auth/session:', response.data)
 
-		const decoded: any = jwtDecode(token)
-		return decoded?.userId || null
+		if (!response.data || !response.data._id) {
+			console.error('❌ Ошибка: В ответе API нет _id пользователя!')
+			return null
+		}
+
+		return response.data
 	} catch (error) {
-		console.error('❌ Ошибка декодирования токена:', error)
+		console.error('❌ Ошибка получения сессии:', error)
+		return null
+	}
+}
+
+export const fetchCurrentUser = async () => {
+	try {
+		const response = await api.get('/auth/session', { withCredentials: true })
+		console.log('✅ Данные текущего пользователя:', response.data)
+		return response.data
+	} catch (error) {
+		console.error('❌ Ошибка получения текущего пользователя:', error)
 		return null
 	}
 }

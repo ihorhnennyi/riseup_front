@@ -178,29 +178,29 @@ const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 
 					<TextField
 						label='Имя'
-						value={formData.name}
+						value={formData.name || ''}
 						onChange={e => handleChange('name', e.target.value)}
 					/>
 					<TextField
 						label='Фамилия'
-						value={formData.surname}
+						value={formData.surname || ''}
 						onChange={e => handleChange('surname', e.target.value)}
 					/>
 					<TextField
 						label='Email'
-						value={formData.email}
+						value={formData.email || ''}
 						onChange={e => handleChange('email', e.target.value)}
 					/>
 					<TextField
 						label='Телефон'
-						value={formData.phone}
+						value={formData.phone || ''}
 						onChange={e => handleChange('phone', e.target.value)}
 					/>
 
 					<TextField
 						select
 						label='Статус кандидата'
-						value={formData.statusId}
+						value={formData.statusId || ''}
 						onChange={e => handleChange('statusId', e.target.value)}
 					>
 						{statuses.map(status => (
@@ -223,7 +223,7 @@ const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 					<Typography variant='h6'>Заработная плата</Typography>
 					<TextField
 						label='Ожидаемая зарплата'
-						value={formData.salaryExpectation}
+						value={formData.salaryExpectation || ''}
 						onChange={e => handleChange('salaryExpectation', e.target.value)}
 					/>
 
@@ -252,7 +252,7 @@ const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 						label='Примечания'
 						multiline
 						rows={3}
-						value={formData.notes}
+						value={formData.notes || ''}
 						onChange={e => handleChange('notes', e.target.value)}
 					/>
 				</Box>

@@ -9,8 +9,8 @@ import {
 
 interface AuthContextType {
 	isAuthenticated: boolean
-	role: 'admin' | 'user' | null
-	login: (token: string, userRole: 'admin' | 'user') => void
+	role: 'admin' | 'recruiter' | null
+	login: (token: string, userRole: 'admin' | 'recruiter') => void
 	logout: () => void
 }
 
@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
 	const [isAuthenticated, setIsAuthenticated] = useState(false)
-	const [role, setRole] = useState<'admin' | 'user' | null>(null)
+	const [role, setRole] = useState<'admin' | 'recruiter' | null>(null)
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
 	useEffect(() => {
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 		checkAuth()
 	}, [])
 
-	const login = (token: string, userRole: 'admin' | 'user') => {
+	const login = (token: string, userRole: 'admin' | 'recruiter') => {
 		localStorage.setItem('access_token', token)
 		localStorage.setItem('user_role', userRole)
 		setIsAuthenticated(true)
