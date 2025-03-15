@@ -69,10 +69,10 @@ const LoginForm = () => {
 			<Box
 				sx={{ width: '100%', maxWidth: 400, mx: 'auto', textAlign: 'center' }}
 			>
-				<Typography fontWeight='bold' fontSize={28} mb={2} color='#6A5ACD'>
+				<Typography fontWeight='bold' fontSize={28} mb={2} color='#A8A8FF'>
 					Добро пожаловать 👋
 				</Typography>
-				<Typography color='#666' fontSize={16} mb={3}>
+				<Typography color='#bbb' fontSize={16} mb={3}>
 					Введите свои данные для входа в систему
 				</Typography>
 
@@ -86,7 +86,8 @@ const LoginForm = () => {
 					variant='outlined'
 					sx={{
 						'& fieldset': { borderColor: '#A0A0A0' },
-						input: { color: '#333' }, // Цвет текста
+						'& label': { color: '#A0A0A0' },
+						'& input': { color: '#fff' }, // ✅ Белый цвет текста
 					}}
 				/>
 
@@ -101,7 +102,8 @@ const LoginForm = () => {
 					variant='outlined'
 					sx={{
 						'& fieldset': { borderColor: '#A0A0A0' },
-						input: { color: '#333' }, // Цвет текста пароля
+						'& label': { color: '#A0A0A0' },
+						'& input': { color: '#fff' }, // ✅ Белый цвет пароля
 					}}
 					InputProps={{
 						endAdornment: (
@@ -109,7 +111,7 @@ const LoginForm = () => {
 								<IconButton
 									onClick={() => setShowPassword(!showPassword)}
 									edge='end'
-									sx={{ color: '#6A5ACD' }}
+									sx={{ color: '#A8A8FF' }}
 								>
 									{showPassword ? <VisibilityOff /> : <Visibility />}
 								</IconButton>
@@ -128,13 +130,14 @@ const LoginForm = () => {
 						<Checkbox
 							checked={rememberMe}
 							onChange={e => setRememberMe(e.target.checked)}
+							sx={{ color: '#A8A8FF' }}
 						/>
-						<Typography color='#333'>Запомнить меня</Typography>
+						<Typography color='#fff'>Запомнить меня</Typography>
 					</Box>
 
 					<Link
 						to='/forgot-password'
-						style={{ textDecoration: 'none', color: '#6A5ACD' }}
+						style={{ textDecoration: 'none', color: '#A8A8FF' }}
 					>
 						Забыли пароль?
 					</Link>

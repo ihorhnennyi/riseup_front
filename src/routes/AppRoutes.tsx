@@ -15,7 +15,6 @@ import { useRoutes } from 'react-router-dom'
 const AppRoutes = () => {
 	const routes = useRoutes([
 		{ path: '/login', element: <Login /> },
-
 		{
 			path: '/',
 			element: <ProtectedRoute />,

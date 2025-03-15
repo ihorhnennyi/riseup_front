@@ -5,6 +5,7 @@ import { Container, Grid, Paper } from '@mui/material'
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import CalendarFilter from './components/CalendarFilter'
 import EditRecruiterModal from './components/EditRecruiterModal'
 import RecruiterCard from './components/RecruiterCard'
 
@@ -98,9 +99,7 @@ const RecruiterDetails = () => {
 								</Paper>
 							</Grid>
 							<Grid item xs={12} md={6}>
-								<Paper sx={{ padding: 2, height: '100%' }}>
-									📅 <strong>Календарь / Фильтр</strong>
-								</Paper>
+								<CalendarFilter onDateChange={dates => console.log(dates)} />
 							</Grid>
 						</Grid>
 					</Grid>

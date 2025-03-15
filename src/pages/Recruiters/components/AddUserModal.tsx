@@ -5,6 +5,7 @@ import AutorenewIcon from '@mui/icons-material/Autorenew'
 import DeleteIcon from '@mui/icons-material/Delete'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
+
 import {
 	Avatar,
 	Box,
@@ -26,7 +27,7 @@ import { fetchIntegrations } from '@api/integrationApi'
 import { LocalizationProvider } from '@mui/x-date-pickers'
 
 const recruiterStatuses = ['Активен', 'Неактивен']
-const userRoles = ['admin', 'user']
+const userRoles = ['admin', 'recruiter']
 
 const generatePassword = () => {
 	const charset =
@@ -58,7 +59,7 @@ const AddRecruiterModal = ({ onUserCreated }) => {
 		viber: '',
 		facebook: '',
 		photo: null,
-		role: 'user',
+		role: 'recruiter',
 		status: 'Активен',
 		email: '',
 		password: generatePassword(),

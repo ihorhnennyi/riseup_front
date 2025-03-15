@@ -1,6 +1,4 @@
-import { fetchBranches } from '@api/branchApi'
-import { deleteUser, fetchUsers } from '@api/userApi'
-import { TableWrapper } from '@components/index'
+import { TableWrapper } from '@components/index.js'
 import DeleteIcon from '@mui/icons-material/Delete'
 import {
 	Box,
@@ -14,6 +12,8 @@ import {
 } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { fetchBranches } from '../../../api/branchApi.js'
+import { deleteUser, fetchUsers } from '../../../api/userApi.js'
 
 const RecruitersTable = ({ reloadTable }) => {
 	const [users, setUsers] = useState<any[]>([])

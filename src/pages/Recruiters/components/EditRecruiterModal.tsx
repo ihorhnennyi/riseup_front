@@ -22,7 +22,7 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 
 const recruiterStatuses = ['Активен', 'Неактивен']
-const userRoles = ['admin', 'user']
+const userRoles = ['admin', 'recruiter']
 
 const generatePassword = () => {
 	const charset =
@@ -56,7 +56,7 @@ const EditRecruiterModal = ({ recruiterId, onClose, onRecruiterUpdated }) => {
 		viber: '',
 		facebook: '',
 		photo: null,
-		role: 'user',
+		role: 'recruiter',
 		status: 'Активен',
 		email: '',
 		password: '',
