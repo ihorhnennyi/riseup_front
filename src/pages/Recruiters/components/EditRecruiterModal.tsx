@@ -39,7 +39,8 @@ const EditRecruiterModal = ({ recruiterId, onClose, onRecruiterUpdated }) => {
 	const [error, setError] = useState<string | null>(null)
 	const [branches, setBranches] = useState([])
 	const [integrations, setIntegrations] = useState([])
-	const [successMessage, setSuccessMessage] = useState(false)
+	const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
 	const [showPassword, setShowPassword] = useState(false)
 	const [newIntegration, setNewIntegration] = useState('')
 	const [originalPassword, setOriginalPassword] = useState('') // 🔹 Храним старый пароль
@@ -166,6 +167,7 @@ const EditRecruiterModal = ({ recruiterId, onClose, onRecruiterUpdated }) => {
 	const handleSubmit = async () => {
 		setLoading(true)
 		setError(null)
+		setSuccessMessage(null) // ✅ Сбрасываем старое сообщение
 
 		if (!formData.firstName?.trim() || !formData.email?.trim()) {
 			setError('Имя и Email обязательны для заполнения!')
@@ -174,8 +176,12 @@ const EditRecruiterModal = ({ recruiterId, onClose, onRecruiterUpdated }) => {
 		}
 
 		try {
-			const { _id, ...updatedUserData } = formData
-			const userId = _id || recruiterId // ✅ Если _id нет, берем recruiterId
+			const { _id, password, ...restData } = formData
+			const userId = _id || recruiterId
+
+			const updatedUserData = password?.trim()
+				? { ...restData, password }
+				: { ...restData }
 
 			console.log('📤 Отправляемые данные:', updatedUserData)
 
@@ -190,13 +196,17 @@ const EditRecruiterModal = ({ recruiterId, onClose, onRecruiterUpdated }) => {
 			const updatedData = await fetchUserById(userId)
 			setFormData(updatedData)
 
-			setSuccessMessage(true)
+			setSuccessMessage('✅ Данные успешно обновлены!') // ✅ Исправлено
+
 			onRecruiterUpdated(updatedUserData)
 
-			setTimeout(() => onClose(), 1500)
+			setTimeout(() => {
+				setSuccessMessage(null) // ✅ Очищаем сообщение
+				onClose()
+			}, 3000)
 		} catch (err) {
 			console.error('Ошибка при обновлении', err)
-			setError('Ошибка при обновлении пользователя')
+			setError('❌ Ошибка при обновлении пользователя!')
 		} finally {
 			setLoading(false)
 		}

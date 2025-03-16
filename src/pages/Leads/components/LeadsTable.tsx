@@ -31,10 +31,8 @@ const LeadsTable = ({ reload }: { reload: boolean }) => {
 			try {
 				const userData = await fetchCurrentUser()
 				setCurrentUser(userData)
-				console.log('🔑 Текущий пользователь:', userData)
 
 				const leadsData = await fetchLeads()
-				console.log('📌 Все лиды:', leadsData)
 
 				// ✅ Фильтрация лидов в зависимости от роли
 				if (userData.role === 'recruiter') {
@@ -42,13 +40,11 @@ const LeadsTable = ({ reload }: { reload: boolean }) => {
 						lead => lead.recruiter?._id === userData._id
 					)
 					setLeads(filteredLeads)
-					console.log('🛠 Фильтрованные лиды для рекрутера:', filteredLeads)
 				} else {
 					// Если админ, показываем всех лидов
 					setLeads(leadsData)
 				}
 			} catch (err) {
-				console.error('Ошибка загрузки данных:', err)
 				setError('Не удалось загрузить данные')
 			} finally {
 				setLoading(false)

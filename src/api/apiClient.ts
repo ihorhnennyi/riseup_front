@@ -1,14 +1,14 @@
 import axios from 'axios'
 
-const API_URL = 'http://localhost:8000' // Заменить на production URL, если развернул
+const API_URL = 'http://localhost:8000' // ✅ ПРОВЕРЬ ПОРТ БЭКЕНДА!
 
-// Функция для получения CSRF-токена из куки
+// 🔹 Получение CSRF-токена из куки
 const getCsrfToken = (): string | null => {
 	const match = document.cookie.match(/(^| )XSRF-TOKEN=([^;]+)/)
 	return match ? decodeURIComponent(match[2]) : null
 }
 
-// Создаём API-клиент
+// 🔹 Создание API-клиента
 const api = axios.create({
 	baseURL: API_URL,
 	withCredentials: true, // ✅ Передача куков и токенов
@@ -18,7 +18,7 @@ const api = axios.create({
 	},
 })
 
-// 🔹 Перехватчик запросов: автоматически добавляем CSRF-токен
+// 🔹 Автоматически добавляем CSRF-токен
 api.interceptors.request.use(
 	config => {
 		const csrfToken = getCsrfToken()
@@ -32,21 +32,27 @@ api.interceptors.request.use(
 	error => Promise.reject(error)
 )
 
-// 🔹 Перехватчик ответов: обновляем токен при 401 (если accessToken истёк)
+// 🔄 Перехватчик ответа: если токен истёк, пробуем обновить
 api.interceptors.response.use(
 	response => response,
 	async error => {
 		if (error.response?.status === 401) {
 			console.warn('🔄 Токен истёк, пробуем обновить...')
 			try {
-				await axios.post(
+				const refreshResponse = await axios.post(
 					`${API_URL}/auth/refresh`,
 					{},
 					{ withCredentials: true }
 				)
-				return api(error.config) // Повторяем оригинальный запрос
+
+				console.log('🔄 Новый accessToken получен:', refreshResponse.data)
+
+				// Повторяем оригинальный запрос с новым токеном
+				return api(error.config)
 			} catch (refreshError) {
 				console.error('🚫 Ошибка при обновлении токена', refreshError)
+				// Если refreshToken невалидный → разлогиниваем
+				return Promise.reject(refreshError)
 			}
 		}
 		return Promise.reject(error)

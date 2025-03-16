@@ -33,27 +33,25 @@ const LeadDetails = () => {
 			}
 
 			try {
-				// ✅ Загружаем статусы перед лидом
 				const statusesData = await fetchStatuses()
 				setStatuses(statusesData)
-				console.log('📌 Статусы обновлены:', statusesData)
 
-				// ✅ Загружаем лида
 				const leadData = await fetchLeadById(id)
+
 				console.log('📌 Полученные данные лида:', leadData)
 
-				// ✅ Приводим статус лида в правильный формат
 				const leadStatusId = leadData?.statusId?._id || leadData?.statusId
 				const leadStatus = statusesData.find(s => s._id === leadStatusId)
 
-				// ✅ Обновляем состояние лида
 				setLead({
 					...leadData,
 					statusId: leadStatus ? leadStatus._id : null,
+					recruiter: leadData.recruiter || null,
+					createdBy: leadData.createdBy || null,
 				})
 			} catch (err) {
 				console.error('Ошибка загрузки лида:', err)
-				setError('Unable to fetch lead data')
+				setError('Не удалось загрузить данные лида')
 			} finally {
 				setLoading(false)
 			}
@@ -83,7 +81,6 @@ const LeadDetails = () => {
 						Назад
 					</Button>
 
-					{/* Header */}
 					<Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
 						<Avatar
 							alt={lead?.name}
@@ -102,7 +99,7 @@ const LeadDetails = () => {
 
 					<Divider sx={{ my: 2 }} />
 
-					{/* Personal Information */}
+					{/* 🔹 Личная информация */}
 					<Typography variant='h6' sx={{ fontWeight: 'bold' }}>
 						Личная информация
 					</Typography>
@@ -114,11 +111,11 @@ const LeadDetails = () => {
 							<Typography variant='body1'>
 								Telegram: {lead?.telegram || 'N/A'}
 							</Typography>
-						</Grid>
-						<Grid item xs={12} md={6}>
 							<Typography variant='body1'>
 								Возраст: {lead?.age || 'N/A'}
 							</Typography>
+						</Grid>
+						<Grid item xs={12} md={6}>
 							<Typography variant='body1'>
 								Статус:{' '}
 								{lead?.statusId && statuses.length
@@ -126,47 +123,79 @@ const LeadDetails = () => {
 											?.name || 'Без статуса'
 									: 'Загрузка статуса...'}
 							</Typography>
+							<Typography variant='body1'>
+								Дата завершения статуса:{' '}
+								{lead?.statusEndDate
+									? new Date(lead.statusEndDate).toLocaleDateString()
+									: 'Не указана'}
+							</Typography>
 						</Grid>
 					</Grid>
 
 					<Divider sx={{ my: 2 }} />
 
-					{/* Skills and Work Preferences */}
+					{/* 🔹 Дополнительная информация */}
 					<Typography variant='h6' sx={{ fontWeight: 'bold' }}>
-						Навыки и предпочтения
+						Дополнительная информация
 					</Typography>
 					<Grid container spacing={2} sx={{ mb: 2 }}>
-						<Grid item xs={12} md={6}>
-							<Typography variant='body1'>
-								График работы: {lead?.workSchedule || 'N/A'}
-							</Typography>
-							<Typography variant='body1'>
-								Ожидаемая зарплата: {lead?.salaryExpectation || 'N/A'}
-							</Typography>
-						</Grid>
 						<Grid item xs={12} md={6}>
 							<Typography variant='body1'>
 								Готов к переезду: {lead?.relocation ? 'Да' : 'Нет'}
 							</Typography>
 							<Typography variant='body1'>
-								Удаленная работа: {lead?.remoteWork ? 'Да' : 'Нет'}
+								Готов к удаленной работе: {lead?.remoteWork ? 'Да' : 'Нет'}
+							</Typography>
+						</Grid>
+						<Grid item xs={12} md={6}>
+							<Typography variant='body1'>
+								Зарплатные ожидания: {lead?.salaryExpectation || 'Не указаны'}
 							</Typography>
 						</Grid>
 					</Grid>
 
 					<Divider sx={{ my: 2 }} />
 
-					{/* Notes Section */}
-					{lead?.notes && (
-						<Box sx={{ mb: 2 }}>
-							<Typography variant='h6' sx={{ fontWeight: 'bold' }}>
-								Заметки
-							</Typography>
-							<Typography variant='body1'>{lead.notes}</Typography>
-						</Box>
-					)}
+					{/* 🔹 Рекрутер */}
+					<Typography variant='h6' sx={{ fontWeight: 'bold' }}>
+						Рекрутер
+					</Typography>
+					<Typography variant='body1'>
+						{lead?.recruiter
+							? `${lead.recruiter.firstName} ${lead.recruiter.lastName} (${lead.recruiter.email})`
+							: 'Не указан'}
+					</Typography>
 
-					{/* Action Buttons */}
+					<Divider sx={{ my: 2 }} />
+
+					<Typography variant='h6' sx={{ fontWeight: 'bold' }}>
+						Примечания
+					</Typography>
+					<Typography variant='body1'>
+						{lead?.notes?.trim() ? lead.notes : 'Нет заметок'}
+					</Typography>
+
+					<Divider sx={{ my: 2 }} />
+
+					{/* 🔹 Даты */}
+					<Typography variant='h6' sx={{ fontWeight: 'bold' }}>
+						Временные метки
+					</Typography>
+					<Grid container spacing={2} sx={{ mb: 2 }}>
+						<Grid item xs={12} md={6}>
+							<Typography variant='body1'>
+								Дата создания:{' '}
+								{new Date(lead?.createdAt).toLocaleString() || 'Неизвестно'}
+							</Typography>
+						</Grid>
+						<Grid item xs={12} md={6}>
+							<Typography variant='body1'>
+								Последнее обновление:{' '}
+								{new Date(lead?.updatedAt).toLocaleString() || 'Неизвестно'}
+							</Typography>
+						</Grid>
+					</Grid>
+
 					<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
 						<Button
 							variant='contained'
@@ -175,33 +204,15 @@ const LeadDetails = () => {
 						>
 							Редактировать
 						</Button>
-
-						{editModalOpen && (
-							<EditCandidateModal
-								leadId={lead._id}
-								onClose={() => setEditModalOpen(false)}
-								onLeadUpdated={async updatedLead => {
-									setLead(prev => ({
-										...prev,
-										...updatedLead,
-										statusId:
-											updatedLead.statusId?._id || updatedLead.statusId || '',
-									}))
-
-									// 🔄 Перезапрашиваем статусы после обновления
-									const statusesData = await fetchStatuses()
-									setStatuses(statusesData)
-								}}
-							/>
-						)}
-						<Button
-							variant='outlined'
-							color='error'
-							onClick={() => alert('Удалить лида')}
-						>
-							Удалить
-						</Button>
 					</Box>
+
+					{editModalOpen && (
+						<EditCandidateModal
+							leadId={lead._id}
+							onClose={() => setEditModalOpen(false)}
+							onLeadUpdated={updatedLead => setLead(updatedLead)}
+						/>
+					)}
 				</Paper>
 			</Container>
 		</motion.div>

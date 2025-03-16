@@ -25,12 +25,14 @@ export const login = async (
 		const response = await api.post(
 			'/auth/login',
 			{ email, password, rememberMe },
-			{ withCredentials: true } // ✅ Отправляем куки
+			{ withCredentials: true }
 		)
 
 		console.log('✅ Успешный вход, куки установлены')
 
-		// ❌ Не сохраняем accessToken в localStorage (он теперь в Cookie)
+		// ✅ Сохраняем данные пользователя после входа
+		sessionStorage.setItem('currentUser', JSON.stringify(response.data))
+
 		return response.data
 	} catch (error) {
 		console.error('❌ Ошибка входа:', error)
@@ -43,6 +45,11 @@ export const logout = async () => {
 	try {
 		await api.post('/auth/logout', {}, { withCredentials: true })
 		console.log('✅ Выход выполнен')
+
+		// ❌ Удаляем сессию пользователя
+		sessionStorage.removeItem('currentUser')
+		document.cookie =
+			'accessToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT;'
 	} catch (error) {
 		console.error('❌ Ошибка выхода:', error)
 	}
@@ -51,16 +58,13 @@ export const logout = async () => {
 export const getUserSession = async () => {
 	try {
 		const response = await api.get('/auth/session', { withCredentials: true })
-		console.log('✅ API /auth/session:', response.data)
 
 		if (!response.data || !response.data._id) {
-			console.error('❌ Ошибка: В ответе API нет _id пользователя!')
 			return null
 		}
 
 		return response.data
 	} catch (error) {
-		console.error('❌ Ошибка получения сессии:', error)
 		return null
 	}
 }
@@ -68,10 +72,9 @@ export const getUserSession = async () => {
 export const fetchCurrentUser = async () => {
 	try {
 		const response = await api.get('/auth/session', { withCredentials: true })
-		console.log('✅ Данные текущего пользователя:', response.data)
+
 		return response.data
 	} catch (error) {
-		console.error('❌ Ошибка получения текущего пользователя:', error)
 		return null
 	}
 }

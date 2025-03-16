@@ -1,28 +1,32 @@
 import { fetchLeadById, updateLead } from '@api/leadsApi'
 import { fetchStatuses } from '@api/statusApi'
-import { ModalWrapper } from '@components/index'
+import { fetchUsers } from '@api/userApi'
 import {
 	Avatar,
 	Box,
 	Button,
 	Checkbox,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
 	FormControlLabel,
 	MenuItem,
-	Snackbar,
 	TextField,
 	Typography,
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
-	const navigate = useNavigate()
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const [successMessage, setSuccessMessage] = useState(false)
 	const [statuses, setStatuses] = useState([])
+	const [users, setUsers] = useState([])
+	const [photoModalOpen, setPhotoModalOpen] = useState(false)
+	const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+	const [tempUrl, setTempUrl] = useState('')
 
 	const [formData, setFormData] = useState({
 		name: '',
@@ -31,32 +35,34 @@ const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 		email: '',
 		phone: '',
 		age: '',
-		photo: null as File | null,
+		photo: '',
 		telegram: '',
 		salaryExpectation: '',
 		relocation: false,
-		remoteWork: false,
-		workSchedule: [],
-		portfolio: [''],
+		remoteWork: true,
 		notes: '',
 		statusId: '',
-		statusEndDate: null,
+		statusEndDate: '',
+		recruiter: '',
+		createdBy: '',
 	})
 
 	useEffect(() => {
 		const loadLeadData = async () => {
 			try {
 				const leadData = await fetchLeadById(leadId)
-				console.log('📦 Полученные данные лида:', leadData) // Логируем данные
 
-				setFormData(prev => ({
-					...prev,
-					...leadData, // Загружаем все данные
+				setFormData({
+					...leadData,
 					statusId: leadData.statusId?._id || '',
+					recruiter: leadData.recruiter?._id || '',
+					createdBy: leadData.createdBy?._id || '',
 					statusEndDate: leadData.statusEndDate
 						? dayjs(leadData.statusEndDate)
 						: null,
-				}))
+				})
+
+				setPhotoUrl(leadData.photo || null)
 			} catch (err) {
 				console.error('Ошибка загрузки лида:', err)
 				setError('Не удалось загрузить данные лида')
@@ -66,6 +72,7 @@ const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 		if (leadId) {
 			loadLeadData()
 			fetchStatuses().then(setStatuses).catch(console.error)
+			fetchUsers().then(setUsers).catch(console.error)
 		}
 	}, [leadId])
 
@@ -73,59 +80,45 @@ const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 		setFormData(prev => ({ ...prev, [field]: value }))
 	}
 
-	const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0]
-		if (file) {
-			setFormData(prev => ({ ...prev, photo: file }))
+	const handleOpenPhotoModal = () => {
+		setTempUrl(photoUrl || '')
+		setPhotoModalOpen(true)
+	}
+
+	const handleSavePhotoUrl = () => {
+		if (tempUrl.trim()) {
+			setPhotoUrl(tempUrl)
+			setFormData(prev => ({ ...prev, photo: tempUrl }))
 		}
+		setPhotoModalOpen(false)
 	}
 
 	const handleSubmit = async () => {
 		setLoading(true)
 		setError(null)
 
-		if (!formData.name?.trim()) {
+		if (!formData.name.trim()) {
 			setError('Имя обязательно для заполнения')
 			setLoading(false)
 			return
 		}
 
 		try {
-			const formDataToSend = new FormData()
-			formDataToSend.append(
-				'leadData',
-				JSON.stringify({
-					name: formData.name,
-					surname: formData.surname,
-					middleName: formData.middleName,
-					email: formData.email,
-					phone: formData.phone,
-					age: formData.age ? Number(formData.age) : 0,
-					telegram: formData.telegram,
-					salaryExpectation: formData.salaryExpectation,
-					relocation: formData.relocation,
-					remoteWork: formData.remoteWork,
-					workSchedule: formData.workSchedule,
-					portfolio: formData.portfolio,
-					notes: formData.notes,
-					statusId: formData.statusId,
-					statusEndDate: formData.statusEndDate
-						? new Date(formData.statusEndDate).toISOString()
-						: undefined,
-				})
-			)
-
-			if (formData.photo) {
-				formDataToSend.append('photo', formData.photo)
+			const formattedData = {
+				...formData,
+				age: Number(formData.age) || undefined,
+				salaryExpectation: formData.salaryExpectation
+					? Number(formData.salaryExpectation)
+					: undefined,
+				statusId: formData.statusId?.trim() || undefined,
+				statusEndDate: formData.statusEndDate || undefined,
+				notes: formData.notes?.trim() || undefined,
 			}
 
-			await updateLead(leadId, formDataToSend)
+			await updateLead(leadId, formattedData)
 
-			// 🔄 Автоматически загружаем свежие данные
 			const updatedLead = await fetchLeadById(leadId)
-
-			onLeadUpdated(updatedLead) // ✅ Передаём обновлённые данные
-			setSuccessMessage(true)
+			onLeadUpdated(updatedLead)
 
 			setTimeout(() => {
 				onClose()
@@ -140,130 +133,172 @@ const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 
 	return (
 		<>
-			<ModalWrapper
-				title='Редактирование кандидата'
-				open={!!leadId}
-				onClose={onClose}
-				actions={
-					<>
-						<Button onClick={onClose}>Отмена</Button>
-						<Button
-							color='primary'
-							onClick={handleSubmit}
-							disabled={loading || !formData.name?.trim()}
-						>
-							{loading ? 'Сохранение...' : 'Сохранить'}
-						</Button>
-					</>
-				}
-			>
-				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-					<Typography variant='h6'>Основная информация</Typography>
+			<Dialog open={!!leadId} onClose={onClose} fullWidth maxWidth='sm'>
+				<DialogTitle>Редактирование кандидата</DialogTitle>
+				<DialogContent>
+					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+						<Typography variant='h6'>Основная информация</Typography>
 
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-						<Avatar
-							src={
-								formData.photo
-									? URL.createObjectURL(formData.photo)
-									: '/default-avatar.png'
-							}
-							sx={{ width: 80, height: 80 }}
+						<Box
+							sx={{
+								display: 'flex',
+								flexDirection: 'column',
+								alignItems: 'center',
+								gap: 1,
+							}}
+						>
+							<Avatar
+								src={photoUrl || '/default-avatar.png'}
+								sx={{ width: 100, height: 100 }}
+							/>
+							<Button variant='contained' onClick={handleOpenPhotoModal}>
+								Добавить фото
+							</Button>
+						</Box>
+
+						<TextField
+							label='Имя'
+							value={formData.name || ''}
+							onChange={e => handleChange('name', e.target.value)}
+						/>
+						<TextField
+							label='Фамилия'
+							value={formData.surname || ''}
+							onChange={e => handleChange('surname', e.target.value)}
+						/>
+						<TextField
+							label='Отчество'
+							value={formData.middleName || ''}
+							onChange={e => handleChange('middleName', e.target.value)}
+						/>
+						<TextField
+							label='Email'
+							value={formData.email || ''}
+							onChange={e => handleChange('email', e.target.value)}
+						/>
+						<TextField
+							label='Телефон'
+							value={formData.phone || ''}
+							onChange={e => handleChange('phone', e.target.value)}
+						/>
+						<TextField
+							label='Возраст'
+							type='number'
+							value={formData.age || ''}
+							onChange={e => handleChange('age', e.target.value)}
+						/>
+						<TextField
+							label='Telegram'
+							value={formData.telegram || ''}
+							onChange={e => handleChange('telegram', e.target.value)}
+						/>
+						<TextField
+							label='Зарплатные ожидания'
+							type='number'
+							value={formData.salaryExpectation || ''}
+							onChange={e => handleChange('salaryExpectation', e.target.value)}
 						/>
 
-						<Button variant='contained' component='label'>
-							Загрузить фото
-							<input type='file' hidden onChange={handlePhotoChange} />
-						</Button>
+						<FormControlLabel
+							control={
+								<Checkbox
+									checked={formData.relocation}
+									onChange={e => handleChange('relocation', e.target.checked)}
+								/>
+							}
+							label='Готов к переезду'
+						/>
+						<FormControlLabel
+							control={
+								<Checkbox
+									checked={formData.remoteWork}
+									onChange={e => handleChange('remoteWork', e.target.checked)}
+								/>
+							}
+							label='Готов к удаленной работе'
+						/>
+
+						<TextField
+							label='Примечания'
+							multiline
+							rows={5}
+							value={formData.notes}
+							onChange={e => handleChange('notes', e.target.value)}
+						/>
+
+						<TextField
+							select
+							label='Статус'
+							value={
+								statuses.some(s => s._id === formData.statusId)
+									? formData.statusId
+									: ''
+							}
+							onChange={e => handleChange('statusId', e.target.value)}
+						>
+							{statuses.map(status => (
+								<MenuItem key={status._id} value={status._id}>
+									{status.name}
+								</MenuItem>
+							))}
+						</TextField>
+
+						<DatePicker
+							label='Дата завершения статуса'
+							value={
+								formData.statusEndDate ? dayjs(formData.statusEndDate) : null
+							}
+							onChange={date =>
+								handleChange('statusEndDate', date?.toISOString() || '')
+							}
+						/>
+
+						<TextField
+							select
+							label='Рекрутер'
+							value={
+								users.some(u => u._id === formData.recruiter)
+									? formData.recruiter
+									: ''
+							}
+							onChange={e => handleChange('recruiter', e.target.value)}
+						>
+							{users.map(user => (
+								<MenuItem key={user._id} value={user._id}>
+									{user.firstName} {user.lastName}
+								</MenuItem>
+							))}
+						</TextField>
 					</Box>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={onClose}>Отмена</Button>
+					<Button onClick={handleSubmit} disabled={loading}>
+						{loading ? 'Сохранение...' : 'Сохранить'}
+					</Button>
+				</DialogActions>
+			</Dialog>
 
+			<Dialog
+				open={photoModalOpen}
+				onClose={() => setPhotoModalOpen(false)}
+				fullWidth
+				maxWidth='xs'
+			>
+				<DialogTitle>Введите ссылку на изображение</DialogTitle>
+				<DialogContent>
 					<TextField
-						label='Имя'
-						value={formData.name || ''}
-						onChange={e => handleChange('name', e.target.value)}
+						fullWidth
+						label='Ссылка'
+						value={tempUrl}
+						onChange={e => setTempUrl(e.target.value)}
 					/>
-					<TextField
-						label='Фамилия'
-						value={formData.surname || ''}
-						onChange={e => handleChange('surname', e.target.value)}
-					/>
-					<TextField
-						label='Email'
-						value={formData.email || ''}
-						onChange={e => handleChange('email', e.target.value)}
-					/>
-					<TextField
-						label='Телефон'
-						value={formData.phone || ''}
-						onChange={e => handleChange('phone', e.target.value)}
-					/>
-
-					<TextField
-						select
-						label='Статус кандидата'
-						value={formData.statusId || ''}
-						onChange={e => handleChange('statusId', e.target.value)}
-					>
-						{statuses.map(status => (
-							<MenuItem key={status._id} value={status._id}>
-								{status.name}
-							</MenuItem>
-						))}
-					</TextField>
-
-					<DatePicker
-						label='Дата завершения статуса'
-						value={
-							formData.statusEndDate ? dayjs(formData.statusEndDate) : null
-						}
-						onChange={date =>
-							handleChange('statusEndDate', date?.toISOString() || '')
-						}
-					/>
-
-					<Typography variant='h6'>Заработная плата</Typography>
-					<TextField
-						label='Ожидаемая зарплата'
-						value={formData.salaryExpectation || ''}
-						onChange={e => handleChange('salaryExpectation', e.target.value)}
-					/>
-
-					<Typography variant='h6'>Рабочие предпочтения</Typography>
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={formData.relocation}
-								onChange={e => handleChange('relocation', e.target.checked)}
-							/>
-						}
-						label='Готов к переезду'
-					/>
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={formData.remoteWork}
-								onChange={e => handleChange('remoteWork', e.target.checked)}
-							/>
-						}
-						label='Готов к удаленной работе'
-					/>
-
-					<Typography variant='h6'>Дополнительные заметки</Typography>
-					<TextField
-						label='Примечания'
-						multiline
-						rows={3}
-						value={formData.notes || ''}
-						onChange={e => handleChange('notes', e.target.value)}
-					/>
-				</Box>
-			</ModalWrapper>
-
-			<Snackbar
-				open={successMessage}
-				autoHideDuration={2000}
-				onClose={() => setSuccessMessage(false)}
-				message='Данные успешно сохранены!'
-			/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setPhotoModalOpen(false)}>Отмена</Button>
+					<Button onClick={handleSavePhotoUrl}>Сохранить</Button>
+				</DialogActions>
+			</Dialog>
 		</>
 	)
 }
