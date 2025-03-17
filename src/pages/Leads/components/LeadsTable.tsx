@@ -1,5 +1,5 @@
-import { fetchCurrentUser } from '@api/authApi' // Функция для получения текущего пользователя
-import { deleteLead, fetchLeads } from '@api/leadsApi'
+import { fetchCurrentUser } from '@api/authApi'
+import { deleteLead, fetchLeadById, fetchLeads } from '@api/leadsApi'
 import { TableWrapper } from '@components/index'
 import DeleteIcon from '@mui/icons-material/Delete'
 import {
@@ -17,34 +17,47 @@ import { useNavigate } from 'react-router-dom'
 
 const LeadsTable = ({ reload }: { reload: boolean }) => {
 	const [leads, setLeads] = useState<any[]>([])
+	const [recruiters, setRecruiters] = useState<Record<string, any>>({}) // 🔥 Кэш рекрутеров
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [open, setOpen] = useState(false)
 	const [selectedLead, setSelectedLead] = useState<string | null>(null)
-	const [currentUser, setCurrentUser] = useState<any>(null) // Текущий пользователь
+	const [currentUser, setCurrentUser] = useState<any>(null)
 
 	const navigate = useNavigate()
 
-	// Загружаем текущего пользователя и лидов после него
 	useEffect(() => {
 		const loadData = async () => {
 			try {
 				const userData = await fetchCurrentUser()
 				setCurrentUser(userData)
 
-				const leadsData = await fetchLeads()
+				let leadsData = await fetchLeads() // Загружаем все лиды
+				console.log('🔍 Получены лиды:', leadsData)
 
-				// ✅ Фильтрация лидов в зависимости от роли
+				// Фильтруем лидов, если это рекрутер
 				if (userData.role === 'recruiter') {
-					const filteredLeads = leadsData.filter(
-						lead => lead.recruiter?._id === userData._id
+					leadsData = leadsData.filter(
+						lead => lead.recruiter?.toString() === userData._id.toString()
 					)
-					setLeads(filteredLeads)
-				} else {
-					// Если админ, показываем всех лидов
-					setLeads(leadsData)
 				}
+
+				// 🔥 Загружаем детали каждого лида
+				const detailedLeads = await Promise.all(
+					leadsData.map(async lead => {
+						try {
+							return await fetchLeadById(lead._id) // 🔥 Запрос на конкретного лида
+						} catch (err) {
+							console.error(`❌ Ошибка загрузки лида ${lead._id}:`, err)
+							return lead // Если ошибка, возвращаем без деталей
+						}
+					})
+				)
+
+				setLeads(detailedLeads)
+				console.log('✅ Полные данные лидов:', detailedLeads)
 			} catch (err) {
+				console.error('❌ Ошибка загрузки данных:', err)
 				setError('Не удалось загрузить данные')
 			} finally {
 				setLoading(false)
@@ -68,8 +81,7 @@ const LeadsTable = ({ reload }: { reload: boolean }) => {
 		if (!selectedLead) return
 		try {
 			await deleteLead(selectedLead)
-			const updatedLeads = leads.filter(lead => lead._id !== selectedLead)
-			setLeads(updatedLeads) // Локально обновляем список без перезагрузки
+			setLeads(prev => prev.filter(lead => lead._id !== selectedLead))
 		} catch (err) {
 			console.error('Ошибка удаления лида:', err)
 		} finally {
@@ -85,6 +97,11 @@ const LeadsTable = ({ reload }: { reload: boolean }) => {
 		'Telegram',
 		'Возраст',
 		'Статус',
+		'Дата завершения статуса',
+		'Готов к переезду',
+		'Готов к удаленной работе',
+		'Зарплатные ожидания',
+		'Рекрутер',
 		'Дата создания',
 		'Действия',
 	]
@@ -92,36 +109,49 @@ const LeadsTable = ({ reload }: { reload: boolean }) => {
 	if (loading) return <div>Загрузка...</div>
 	if (error) return <div style={{ color: 'red' }}>{error}</div>
 
-	// Подготовка данных для таблицы
-	const data = leads.map((lead, index) => [
-		lead._id, // Используем _id
-		lead.name || '-',
-		lead.surname || '-',
-		lead.email || '-',
-		lead.phone || '-',
-		lead.telegram || '-',
-		lead.age || '-',
-		lead.status?.name || 'Неизвестный статус', // Проверяем, есть ли статус
-		new Date(lead.createdAt).toLocaleDateString(),
-		<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-			<IconButton
-				color='error'
-				onClick={e => {
-					e.stopPropagation() // Останавливаем всплытие события
-					handleOpenDeleteModal(lead._id)
-				}}
-			>
-				<DeleteIcon />
-			</IconButton>
-		</Box>,
-	])
+	const data = leads.map(lead => {
+		const recruiter =
+			typeof lead.recruiter === 'string'
+				? recruiters[lead.recruiter] // Если recruiter — это ID, берём его из кэша
+				: lead.recruiter // Если уже объект, используем его
+
+		return [
+			lead._id,
+			lead.name || '-',
+			lead.surname || '-',
+			lead.email || '-',
+			lead.phone || '-',
+			lead.telegram || '-',
+			lead.age || '-',
+			lead.status?.name || 'Без статуса',
+			lead.statusEndDate
+				? new Date(lead.statusEndDate).toLocaleDateString()
+				: 'Не указано',
+			lead.relocation ? 'Да' : 'Нет',
+			lead.remoteWork ? 'Да' : 'Нет',
+			lead.salaryExpectation ? `${lead.salaryExpectation} $` : 'Не указано',
+			recruiter ? `${recruiter.firstName} ${recruiter.lastName}` : 'Не указан',
+			new Date(lead.createdAt).toLocaleDateString(),
+			<Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+				<IconButton
+					color='error'
+					onClick={e => {
+						e.stopPropagation()
+						handleOpenDeleteModal(lead._id)
+					}}
+				>
+					<DeleteIcon />
+				</IconButton>
+			</Box>,
+		]
+	})
 
 	return (
 		<>
 			<TableWrapper
 				columns={columns}
 				data={data}
-				onRowClick={id => navigate(`/candidates/${id}`)} // Передаем _id для навигации
+				onRowClick={id => navigate(`/candidates/${id}`)}
 			/>
 
 			{/* Модальное окно подтверждения */}

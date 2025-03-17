@@ -10,7 +10,9 @@ import {
 interface AuthContextType {
 	isAuthenticated: boolean
 	role: 'admin' | 'recruiter' | null
-	login: (token: string, userRole: 'admin' | 'recruiter') => void
+	isAdmin: () => boolean
+	isRecruiter: () => boolean
+	login: (role: 'admin' | 'recruiter') => void
 	logout: () => void
 }
 
@@ -21,6 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 	const [role, setRole] = useState<'admin' | 'recruiter' | null>(null)
 	const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
+	// ✅ Проверяем сессию при загрузке
 	useEffect(() => {
 		const checkAuth = async () => {
 			try {
@@ -29,41 +32,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 				})
 				setIsAuthenticated(response.data.isAuthenticated)
 				setRole(response.data.role || null)
-				localStorage.setItem('user_role', response.data.role || '')
 			} catch (error) {
 				console.error('Ошибка при проверке сессии:', error)
 				setIsAuthenticated(false)
 				setRole(null)
-				localStorage.removeItem('user_role')
 			} finally {
 				setIsCheckingAuth(false)
 			}
 		}
+
 		checkAuth()
 	}, [])
 
-	const login = (token: string, userRole: 'admin' | 'recruiter') => {
-		localStorage.setItem('access_token', token)
-		localStorage.setItem('user_role', userRole)
+	// ✅ Логин без сохранения accessToken в Local Storage
+	const login = (userRole: 'admin' | 'recruiter') => {
 		setIsAuthenticated(true)
 		setRole(userRole)
 	}
 
+	// ✅ Выход (очистка сессии)
 	const logout = async () => {
 		try {
 			await api.post('/auth/logout', {}, { withCredentials: true })
 		} catch (error) {
 			console.error('Ошибка при выходе:', error)
 		}
-		localStorage.removeItem('user_role')
+
 		setIsAuthenticated(false)
 		setRole(null)
 	}
 
+	// ✅ Методы для проверки ролей
+	const isAdmin = () => role === 'admin'
+	const isRecruiter = () => role === 'recruiter'
+
 	if (isCheckingAuth) return <div>Загрузка...</div>
 
 	return (
-		<AuthContext.Provider value={{ isAuthenticated, role, login, logout }}>
+		<AuthContext.Provider
+			value={{ isAuthenticated, role, isAdmin, isRecruiter, login, logout }}
+		>
 			{children}
 		</AuthContext.Provider>
 	)

@@ -1,6 +1,7 @@
 import { fetchLeadById, updateLead } from '@api/leadsApi'
 import { fetchStatuses } from '@api/statusApi'
 import { fetchUsers } from '@api/userApi'
+import { useAuth } from '@context/AuthContext'
 import {
 	Avatar,
 	Box,
@@ -27,6 +28,7 @@ const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 	const [photoModalOpen, setPhotoModalOpen] = useState(false)
 	const [photoUrl, setPhotoUrl] = useState<string | null>(null)
 	const [tempUrl, setTempUrl] = useState('')
+	const { isAdmin } = useAuth()
 
 	const [formData, setFormData] = useState({
 		name: '',
@@ -253,22 +255,29 @@ const EditCandidateModal = ({ leadId, onClose, onLeadUpdated }) => {
 							}
 						/>
 
-						<TextField
-							select
-							label='Рекрутер'
-							value={
-								users.some(u => u._id === formData.recruiter)
-									? formData.recruiter
-									: ''
-							}
-							onChange={e => handleChange('recruiter', e.target.value)}
-						>
-							{users.map(user => (
-								<MenuItem key={user._id} value={user._id}>
-									{user.firstName} {user.lastName}
-								</MenuItem>
-							))}
-						</TextField>
+						{isAdmin() ? (
+							<TextField
+								select
+								label='Рекрутер'
+								value={formData.recruiter}
+								onChange={e => handleChange('recruiter', e.target.value)}
+							>
+								{users.map(user => (
+									<MenuItem key={user._id} value={user._id}>
+										{user.firstName} {user.lastName}
+									</MenuItem>
+								))}
+							</TextField>
+						) : (
+							<TextField
+								label='Рекрутер'
+								value={
+									users.find(u => u._id === formData.recruiter)?.firstName ||
+									'Не выбран'
+								}
+								disabled
+							/>
+						)}
 					</Box>
 				</DialogContent>
 				<DialogActions>

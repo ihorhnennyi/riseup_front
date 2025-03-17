@@ -61,6 +61,7 @@ const Leads = () => {
 			<AddLeadFromRabotaModal
 				open={openRabotaModal}
 				onClose={() => setOpenRabotaModal(false)}
+				onLeadAdded={handleLeadAdded} // ✅ Теперь передаём коллбек обновления таблицы
 			/>
 		</Box>
 	)

@@ -8,11 +8,13 @@ import { useEffect, useState } from 'react'
 interface AddLeadFromRabotaModalProps {
 	open: boolean
 	onClose: () => void
+	onLeadAdded: () => void // ✅ Добавляем пропс для обновления списка лидов
 }
 
 const AddLeadFromRabotaModal: React.FC<AddLeadFromRabotaModalProps> = ({
 	open,
 	onClose,
+	onLeadAdded,
 }) => {
 	const [error, setError] = useState<string | null>(null)
 	const [login, setLogin] = useState<string | null>(null)
@@ -134,6 +136,20 @@ const AddLeadFromRabotaModal: React.FC<AddLeadFromRabotaModalProps> = ({
 
 			console.log('✅ Кандидат успешно создан:', response)
 			setResume(candidateData)
+
+			// ✅ Проверяем, передан ли onLeadAdded перед вызовом
+			if (onLeadAdded) {
+				onLeadAdded()
+			} else {
+				console.warn('⚠️ onLeadAdded не передан в AddLeadFromRabotaModal')
+			}
+
+			// ✅ Закрываем модалку
+			if (onClose) {
+				onClose()
+			} else {
+				console.warn('⚠️ onClose не передан в AddLeadFromRabotaModal')
+			}
 		} catch (error: any) {
 			console.error('❌ Ошибка при запросе резюме:', error)
 			setError(error.response?.data?.message || 'Ошибка загрузки резюме')

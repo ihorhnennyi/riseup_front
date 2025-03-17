@@ -13,11 +13,10 @@ export const fetchCsrfToken = async (): Promise<void> => {
 	}
 }
 
-// 🔹 Функция логина
 export const login = async (
 	email: string,
 	password: string,
-	rememberMe: boolean
+	rememberMe = false
 ) => {
 	try {
 		await fetchCsrfToken() // ✅ Получаем CSRF-токен перед логином
@@ -27,12 +26,20 @@ export const login = async (
 			{ email, password, rememberMe },
 			{ withCredentials: true }
 		)
+		console.log('✅ Успешный вход, токен установлен')
 
-		console.log('✅ Успешный вход, куки установлены')
+		// ✅ Сохраняем accessToken в куку (HttpOnly недоступен в JS)
+		document.cookie = `accessToken=${response.data.accessToken}; Path=/; Secure; SameSite=Lax`
 
-		// ✅ Сохраняем данные пользователя после входа
+		// ✅ Если включён "Запомнить меня", сохраняем refreshToken
+		if (rememberMe) {
+			document.cookie = `refreshToken=${response.data.refreshToken}; Path=/; Secure; SameSite=Lax`
+		}
+
+		// ✅ Дублируем accessToken в localStorage (если сервер не поддерживает cookie)
+		localStorage.setItem('access_token', response.data.accessToken)
+
 		sessionStorage.setItem('currentUser', JSON.stringify(response.data))
-
 		return response.data
 	} catch (error) {
 		console.error('❌ Ошибка входа:', error)
@@ -46,8 +53,11 @@ export const logout = async () => {
 		await api.post('/auth/logout', {}, { withCredentials: true })
 		console.log('✅ Выход выполнен')
 
-		// ❌ Удаляем сессию пользователя
+		// ❌ Удаляем токены и данные пользователя
 		sessionStorage.removeItem('currentUser')
+		localStorage.removeItem('access_token')
+		localStorage.removeItem('refresh_token')
+
 		document.cookie =
 			'accessToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT;'
 	} catch (error) {
@@ -55,26 +65,25 @@ export const logout = async () => {
 	}
 }
 
-export const getUserSession = async () => {
+// 🔹 Получение данных текущего пользователя
+export const fetchCurrentUser = async () => {
 	try {
 		const response = await api.get('/auth/session', { withCredentials: true })
-
-		if (!response.data || !response.data._id) {
-			return null
-		}
-
 		return response.data
 	} catch (error) {
 		return null
 	}
 }
 
-export const fetchCurrentUser = async () => {
+export const getUserSession = async () => {
 	try {
 		const response = await api.get('/auth/session', { withCredentials: true })
-
+		if (!response.data || !response.data._id) {
+			return null
+		}
 		return response.data
 	} catch (error) {
+		console.error('Ошибка при получении сессии:', error)
 		return null
 	}
 }
